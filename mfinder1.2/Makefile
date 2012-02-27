@@ -13,7 +13,7 @@ EXECUTABLES=mfinder
 all: $(SOURCES) $(EXECUTABLES)
 	
 $(EXECUTABLES): $(OBJECTS) 
-	$(CC) $(LDFLAGS) $(OBJECTS) -o $(EXECUTABLES)
+	$(CC) $(OBJECTS) -o $(EXECUTABLES) $(LDFLAGS)
 
 $(FILES):
 	$(CC) $(CFLAGS) $@.c -o $@.o
