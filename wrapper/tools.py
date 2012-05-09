@@ -23,69 +23,10 @@ motif_translation = {"12":"S1",
                      "110":"D7",
                      "78":"D8",}
 
+from roles import unipartite_roles as motif_roles
 
-motif_roles = {3:[(12, 0, 1),
-                  (12, 1, 1),
-                  (12, 1, 0),
-                  (38, 0, 2),
-                  (38, 1, 1),
-                  (38, 2, 0),
-                  (98, 1, 1),
-                  (36, 0, 1),
-                  (36, 2, 0),
-                  (6, 0, 2),
-                  (6, 1, 0),
-                  (46, 1, 2),
-                  (46, 2, 0),
-                  (108, 0, 2),
-                  (108, 2, 1),
-                  (14, 1, 2),
-                  (14, 1, 1),
-                  (14, 1, 0),
-                  (74, 0, 1),
-                  (74, 1, 1),
-                  (74, 2, 1),
-                  (102, 1, 1,),
-                  (102, 2, 1,),
-                  (102, 1, 2,),
-                  (238, 2, 2),
-                  (110, 1, 2),
-                  (110, 2, 1),
-                  (110, 2, 2),
-                  (78, 1, 1,),
-                  (78, 2, 2,),
-                  ],
-
-               4:[(6, 0, 2),
-                  (6, 1, 0),
-                  (12, 0, 1),
-                  (12, 1, 0),
-                  (12, 1, 1),
-                  (14, 1, 0),
-                  (14, 1, 1),
-                  (14, 1, 2),
-                  (36, 0, 1),
-                  (36, 2, 0),
-                  (38, 0, 2),
-                  (38, 1, 1),
-                  (38, 2, 0),
-                  (46, 1, 2),
-                  (46, 2, 0),
-                  (74, 0, 1),
-                  (74, 1, 1),
-                  (74, 2, 1),
-                  (108, 0, 2),
-                  (108, 2, 1),
-                  (110, 1, 2),
-                  (110, 2, 1),
-                  (110, 2, 2),
-                  (238, 2, 2),
-                  ],
-               }
-
-
+"""
 def normalizeZScores(mstats,normalize=True):
-
   if normalize:
     zsum = 0.0
     for m in mstats:
@@ -103,6 +44,7 @@ def normalizeZScores(mstats,normalize=True):
       real, zscore = mstats[m]
       mstats[m] = (real, zscore, 0)
     return mstats
+"""
 
 # print out the motif structure
 # can print to file or to stdout and append or not
@@ -159,10 +101,16 @@ def readNetwork(innie):
 # write out a network so that mfinder works
 def writeTempNetwork(net,outFilename):
   outFile = open(outFilename,'w')
-  for pred, prey in net:
-    if pred != prey:
-      outFile.write(' '.join([str(i) for i in [pred, prey, 1]]))
-      outFile.write('\n')
+  try:
+    for pred, prey in net:
+      if pred != prey:
+        outFile.write(' '.join(map(str,[pred, prey, 1])))
+        outFile.write('\n')
+  except ValueError:
+    for pred, prey, weight in net:
+      if pred != prey:
+        outFile.write(' '.join(map(str,[pred, prey, weight])))
+        outFile.write('\n')
   outFile.close()
 
 # calculate the motifs for a network calling C++ executable
@@ -223,16 +171,12 @@ def printMotifStatistics(stats):
   
 # parse in which motifs, and in what combination, individual species appear
 def mfinderMembership(filename):
-  membership = {}
-
-  memberstats = False
   inFile = open(filename,'r')
+
+  membership = {}
+  memberstats = False
   for line in inFile:
     if 'subgraph id = ' in line:
-      #try:
-      #  print motif, nreal, len(membership[motif])
-      #except:
-      #  pass
       motif = int(line.strip().split()[-1])
       memberstats = False
     elif 'Nreal : ' in line:
@@ -246,34 +190,43 @@ def mfinderMembership(filename):
           membership[motif].append(sline)
         except:
           membership[motif] = [sline]
-        #print motif,sline
-      #if '+-' in sline:
-      #  print sline
-
 
     if 'Full list of ' in line:
       memberstats = True
-      
+
+  inFile.close()
   return membership
 
 # determine motif roles given network and membership list
 def mfinderRoles(net,membership,motifsize=3):
+  try:
+    weights = dict([((i,j),float(w)) for i,j,w in net])
+  except ValueError:
+    weights = dict([((i,j),1) for i,j in net])
+  unet = weights.keys()
+
   roles = {}
   for motif in membership:
     for motifnodes in membership[motif]:
+      mindex = [i for i,j in motif_roles[motifsize]].index(motif)
+      possible_roles = [tuple([motif]+list(r)) for r in motif_roles[motifsize][mindex][1]]
       for node in motifnodes:
-        indegree  = sum([(othernode,node) in net for othernode in motifnodes if othernode != node])
-        outdegree = sum([(node,othernode) in net for othernode in motifnodes if othernode != node])
+        indegree  = sum([(othernode,node) in unet for othernode in motifnodes if othernode != node])
+        outdegree = sum([(node,othernode) in unet for othernode in motifnodes if othernode != node])
+        key = (motif,indegree,outdegree)
 
-        if not (motif,indegree,outdegree) in roles.keys():
-          roles[(motif,indegree,outdegree)] = {}
+        if key not in possible_roles:
+          print >> sys.stderr, key
+          print >> sys.stderr, "Apparently there is a role you aren't accounting for in roles.py."
+          sys.exit()
+
+        if not key in roles:
+          roles[key] = {}
 
         try:
-          roles[(motif,indegree,outdegree)][node] += 1
+          roles[key][node] += 1
         except:
-          roles[(motif,indegree,outdegree)][node] = 1
-
-  #print roles
+          roles[key][node] = 1
 
   nodes = list(set([i[0] for i in net] + [i[1] for i in net]))
   nodes.sort()
@@ -281,8 +234,9 @@ def mfinderRoles(net,membership,motifsize=3):
   noderoleprofiles = {}
   for node in nodes:
     noderoleprofiles[node] = {}
-    for role in motif_roles[motifsize]:
-      noderoleprofiles[node][role] = 0
+    for motif, rs in motif_roles[motifsize]:
+      for r in rs:
+        noderoleprofiles[node][tuple([motif] + list(r))] = 0
 
   for role in roles:
     for node in roles[role]:
@@ -292,11 +246,20 @@ def mfinderRoles(net,membership,motifsize=3):
 
 def printRoleProfiles(noderoleprofiles,motifsize=3):
   sortednodes = noderoleprofiles.keys()
+  try:
+    sortednodes = map(int,sortednodes)
+  except:
+    pass
   sortednodes.sort()
+  sortednodes = map(str,sortednodes)
   
+  roles = []
+  for motif, rs in motif_roles[motifsize]:
+    roles += [tuple([motif] + list(r)) for r in rs]
+
   for node in sortednodes:
     print str(node)+":",
-    print ' '.join([str(noderoleprofiles[node][role]) for role in motif_roles[motifsize]])
+    print ' '.join([str(noderoleprofiles[node][role]) for role in roles])
 
 
 # 
