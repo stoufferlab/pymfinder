@@ -148,6 +148,21 @@ def mfinderRoles(net,membership,motifsize=3,bipartite=False,weighted=False):
     for motifnodes in membership[motif]:
       mindex = [i for i,j in motif_roles[motifsize]].index(motif)
       possible_roles = [tuple([motif]+list(r)) for r in motif_roles[motifsize][mindex][1]]
+
+      if weighted:
+        w = 0
+        for node in motifnodes:
+          for n in motifnodes:
+            if node != n:
+              try:
+                w += weights[(node,n)]
+              except KeyError:
+                pass
+        if w == int(w):
+          w = int(w)
+      else:
+        w = 1  
+
       for node in motifnodes:
         indegree  = sum([(othernode,node) in unet for othernode in motifnodes if othernode != node])
         outdegree = sum([(node,othernode) in unet for othernode in motifnodes if othernode != node])
@@ -178,9 +193,9 @@ def mfinderRoles(net,membership,motifsize=3,bipartite=False,weighted=False):
           roles[key] = {}
 
         try:
-          roles[key][node] += 1
+          roles[key][node] += w
         except:
-          roles[key][node] = 1
+          roles[key][node] = w
 
   nodes = list(set([i[0] for i in net] + [i[1] for i in net]))
   nodes.sort()

@@ -13,5 +13,9 @@ from option_parser import motif_profiles as option_parser
 
 (options, args) = option_parser()
 
-net = readNetwork(options.Filename)
+if options.Filename == "-":
+  net = readNetwork(sys.stdin)
+else:
+  net = readNetwork(options.Filename)
+
 runMotifProfileAnalysis(net,options.MotifSize,options.Bipartite,options.Weighted)
