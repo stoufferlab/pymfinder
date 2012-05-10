@@ -5,28 +5,13 @@ import sys
 
 # local libraries
 from tools import *
+from option_parser import motif_structure as option_parser
 
 ####################################
 ### Start of main of program
 ####################################
 
-filename=sys.argv[1]
+(options, args) = option_parser()
 
-if filename == '-':
-    filename = sys.stdin
-
-try:
-    motifsize = int(sys.argv[2])
-except:
-    motifsize = 3
-
-try:
-    nrandom = int(sys.argv[3])
-except:
-    nrandom = 250
-
-net = readNetwork(filename)
-
-runMotifAnalysis(net,motifsize,nrandom)
-
-sys.exit()
+net = readNetwork(options.Filename)
+runMotifAnalysis(net,options.MotifSize,options.NRandomizations)

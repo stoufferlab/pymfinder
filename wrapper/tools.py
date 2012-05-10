@@ -1,73 +1,11 @@
 #!/usr/bin/python
 
 # system libraries
-import copy
-from math import sqrt
 import os
-import random
 import subprocess
 import sys
 
-# global variables
-motif_translation = {"12":"S1",
-                     "38":"S2",
-                     "98":"S3",
-                     "36":"S4",
-                     "6":"S5",
-                     "46":"D1",
-                     "108":"D2",
-                     "14":"D3",
-                     "74":"D4",
-                     "102":"D5",
-                     "238":"D6",
-                     "110":"D7",
-                     "78":"D8",}
-
-from roles import unipartite_roles as motif_roles
-
-"""
-def normalizeZScores(mstats,normalize=True):
-  if normalize:
-    zsum = 0.0
-    for m in mstats:
-      zsum += mstats[m][-1]**2
-
-    zsum = sqrt(zsum)
-
-    for m in mstats:
-      real, zscore = mstats[m]
-      mstats[m] = (real, zscore, zscore/float(zsum))
-
-    return mstats
-  else:
-    for m in mstats:
-      real, zscore = mstats[m]
-      mstats[m] = (real, zscore, 0)
-    return mstats
-"""
-
-# print out the motif structure
-# can print to file or to stdout and append or not
-def printMotifAnalysis(originalFilename,ms,stdout=False,append=True):
-  if not stdout:
-    outputFilename = '/'.join(originalFilename.split("/")[:-1]) + '/motif_stats.dat'
-    if append:
-      outFile = open(outputFilename,'a')
-    else:
-      outFile = open(outputFilename,'w')
-  else:
-    outFile = sys.stdout
-
-  for i in [0,1,2]:
-    for m in ['S1','S2','S3','S4','S5','D1','D2','D3','D4','D5','D6','D7','D8',]:
-      outFile.write(str(ms[m][i])+' ')
-
-  outFile.write('\n')
-  outFile.flush()
-
-  if not stdout:
-    outFile.close()
-
+# calculate the time to run the code (I don't really ever use this)
 def realTime(motifstderr):
   motifstderr = motifstderr.strip().split()
   if 'real' in motifstderr:
@@ -78,7 +16,7 @@ def realTime(motifstderr):
   else:
     return 'NA'
 
-# read in a network
+# read in a network from stdin or from a data file
 def readNetwork(innie):
   net = []
   if type(innie) == type(sys.stdin):
@@ -113,7 +51,7 @@ def writeTempNetwork(net,outFilename):
         outFile.write('\n')
   outFile.close()
 
-# calculate the motifs for a network calling C++ executable
+# calculate the motifs for a network by calling mfinder C++ executable
 def mfinder(inFilename,outFilename,motifsize,nrandom,directed=True,maxmem=1000,time=False,membership=True):
   command = "%s %s/../mfinder1.2/mfinder %s -s %s -r %s %s -f %s -q -nu %s"
   
@@ -140,13 +78,11 @@ def mfinder(inFilename,outFilename,motifsize,nrandom,directed=True,maxmem=1000,t
 
   return process.communicate()
 
-
 # parse the output file with counts, z-scores, etc
 def mfinderOutput(filename):
   inFile = open(filename,'r')
 
   stats = {}
-
   motifstats = False
   for line in inFile:
     if motifstats:
@@ -154,19 +90,16 @@ def mfinderOutput(filename):
         motif, nreal, nrand, z, p, conc, uniq = line.strip().split()
         nrand, stdevrand = nrand.split('+-')
         stats[motif] = (nreal,nrand,stdevrand,z,p,conc,uniq)
-
     if 'Full list of subgraphs size ' in line:
       motifstats = True
 
   return stats
 
 def printMotifStatistics(stats):
-  motifs = [int(i) for i in stats.keys()]
+  motifs = map(int,stats.keys())
   motifs.sort()
-
-  for m in motifs:
-    print str(m)+":", ' '.join([i for i in stats[str(m)]])
-  
+  for m in map(str,motifs):
+    print m+":", ' '.join([i for i in stats[m]])
   return
   
 # parse in which motifs, and in what combination, individual species appear
@@ -198,12 +131,17 @@ def mfinderMembership(filename):
   return membership
 
 # determine motif roles given network and membership list
-def mfinderRoles(net,membership,motifsize=3):
+def mfinderRoles(net,membership,motifsize=3,bipartite=False,weighted=False):
   try:
     weights = dict([((i,j),float(w)) for i,j,w in net])
   except ValueError:
     weights = dict([((i,j),1) for i,j in net])
   unet = weights.keys()
+
+  if not bipartite:
+    from roles import unipartite_roles as motif_roles
+  else:
+    from roles import bipartite_roles as motif_roles
 
   roles = {}
   for motif in membership:
@@ -215,6 +153,22 @@ def mfinderRoles(net,membership,motifsize=3):
         outdegree = sum([(node,othernode) in unet for othernode in motifnodes if othernode != node])
         key = (motif,indegree,outdegree)
 
+        # if the node's in and out degrees are insufficient to discern its role
+        # we will add the degrees of the nodes it interacts with (its neighbors)
+        if key not in possible_roles:
+          if indegree > 0:
+            connected_to = [othernode for othernode in motifnodes if othernode != node and (othernode,node) in unet]
+            outdegrees = [sum([(i,j) in unet for j in motifnodes if j != i]) for i in connected_to]
+            outdegrees.sort()
+            key = tuple(list(key) + [tuple(outdegrees)])
+          else:
+            connected_to = [othernode for othernode in motifnodes if othernode != node and (node,othernode) in unet]
+            indegrees = [sum([(j,i) in unet for j in motifnodes if j != i]) for i in connected_to]
+            indegrees.sort()
+            indegrees = tuple(indegrees)
+            key = tuple(list(key) + [tuple(indegrees)])
+
+        # apparently the degrees of the node the focal node interacts with is still insufficient
         if key not in possible_roles:
           print >> sys.stderr, key
           print >> sys.stderr, "Apparently there is a role you aren't accounting for in roles.py."
@@ -234,7 +188,7 @@ def mfinderRoles(net,membership,motifsize=3):
   noderoleprofiles = {}
   for node in nodes:
     noderoleprofiles[node] = {}
-    for motif, rs in motif_roles[motifsize]:
+    for motif,rs in motif_roles[motifsize]:
       for r in rs:
         noderoleprofiles[node][tuple([motif] + list(r))] = 0
 
@@ -244,7 +198,8 @@ def mfinderRoles(net,membership,motifsize=3):
 
   return noderoleprofiles
 
-def printRoleProfiles(noderoleprofiles,motifsize=3):
+# print out the role profiles species by species
+def printRoleProfiles(noderoleprofiles,motifsize=3,bipartite=False):
   sortednodes = noderoleprofiles.keys()
   try:
     sortednodes = map(int,sortednodes)
@@ -253,23 +208,28 @@ def printRoleProfiles(noderoleprofiles,motifsize=3):
   sortednodes.sort()
   sortednodes = map(str,sortednodes)
   
+  if not bipartite:
+    from roles import unipartite_roles as motif_roles
+  else:
+    from roles import bipartite_roles as motif_roles
+
   roles = []
-  for motif, rs in motif_roles[motifsize]:
+  for motif,rs in motif_roles[motifsize]:
     roles += [tuple([motif] + list(r)) for r in rs]
 
   for node in sortednodes:
     print str(node)+":",
     print ' '.join([str(noderoleprofiles[node][role]) for role in roles])
 
+  return
 
-# 
+# run motif structure analysis (and, if desired, compare to randomized networks)
 def runMotifAnalysis(net,motifsize=3,nrandom=250,directed=True):
   pid = str(os.getpid())
   netFilename = '/tmp/kk.mfinder.in.' + pid
   outFilename = '/tmp/kk.mfinder.out.' + pid
 
   motifFilename = outFilename + '_OUT.txt'
-  #memberFilename = outFilename + '_MEMBERS.txt'
 
   writeTempNetwork(net,netFilename)
   pipestdout, pipestderr = mfinder(netFilename,outFilename,motifsize,nrandom,directed,membership=False,)
@@ -277,16 +237,14 @@ def runMotifAnalysis(net,motifsize=3,nrandom=250,directed=True):
   ms = mfinderOutput(motifFilename)
   printMotifStatistics(ms)
 
-  #pipe = subprocess.Popen('rm %s %s %s' % (netFilename,motifFilename,memberFilename),
   pipe = subprocess.Popen('rm %s %s' % (netFilename,motifFilename),
                           shell=True)
   pipe.communicate()
 
   return
 
-
 # calculate species motif role profiles and print them out species by species
-def runMotifProfileAnalysis(net,motifsize=3,nrandom=250,directed=True):
+def runMotifProfileAnalysis(net,motifsize=3,bipartite=False,weighted=False):
   pid = str(os.getpid())
   netFilename = '/tmp/kk.mfinder.in.' + pid
   outFilename = '/tmp/kk.mfinder.out.' + pid
@@ -295,25 +253,22 @@ def runMotifProfileAnalysis(net,motifsize=3,nrandom=250,directed=True):
   memberFilename = outFilename + '_MEMBERS.txt'
 
   writeTempNetwork(net,netFilename)
-  pipestdout, pipestderr = mfinder(netFilename,outFilename,motifsize,nrandom,directed)
+  pipestdout, pipestderr = mfinder(netFilename,outFilename,motifsize,nrandom=0,directed=True)
   ms = mfinderOutput(motifFilename)
 
   maxnreal = max([int(ms[i][0]) for i in ms])
-
   if maxnreal > 1000:
     print >> sys.stderr, "upped maxmem to " + str(maxnreal+1)
-    pipestdout, pipestderr = mfinder(netFilename,outFilename,motifsize,nrandom,directed,maxmem=maxnreal+1)
+    pipestdout, pipestderr = mfinder(netFilename,outFilename,motifsize,nrandom=0,directed=True,maxmem=maxnreal+1)
     ms = mfinderOutput(motifFilename)
 
   membership = mfinderMembership(memberFilename)
+  profiles = mfinderRoles(net,membership,motifsize,bipartite,weighted)
+  printRoleProfiles(profiles,motifsize,bipartite)
 
   pipe = subprocess.Popen('rm %s %s %s' % (netFilename,motifFilename,memberFilename),
                           shell=True)
   pipe.communicate()
-
-  profiles = mfinderRoles(net,membership,motifsize)
-
-  printRoleProfiles(profiles)
 
   return
 
