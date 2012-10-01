@@ -148,9 +148,11 @@ def mfinderRoles(net,membership,motifsize=3,bipartite=False,weighted=False):
   unet = weights.keys()
 
   if not bipartite:
-    from roles import unipartite_roles as motif_roles
+    from unipartite_roles import unipartite_roles as motif_roles
   else:
-    from roles import bipartite_roles as motif_roles
+    #from bipartite_roles import bipartite_roles as motif_roles
+    sys.stderr.write("Sorry, calculation of node roles in bipartite networks has not yet been implemented.\n")
+    sys.exit(1)
 
   roles = {}
   for motif in membership:
