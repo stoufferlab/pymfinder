@@ -51,30 +51,39 @@ def writeTempNetwork(net,outFilename):
         outFile.write('\n')
   outFile.close()
 
+# make sure mfinder is compiled
+def mfinderMake():
+  try:
+    process = subprocess.check_call(['make','-s','-C',os.path.dirname(__file__) + '/../mfinder1.2/'],
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE,)
+    return process
+  except subprocess.CalledProcessError:
+    print("error in compiling the mfinder1.2 package")
+    sys.exit()
+
 # calculate the motifs for a network by calling mfinder C++ executable
 def mfinder(inFilename,outFilename,motifsize,nrandom,directed=True,maxmem=1000,time=False,membership=True):
-  command = "%s %s/../mfinder1.2/mfinder %s -s %s -r %s %s -f %s -q -nu %s"
-  
-  if membership:
-    membershipstring = '-omem -maxmem %s' % maxmem
-  else:
-    membershipstring = ''
+  mfinderMake()
 
-  if time:
-    timestring = 'time'
-  else:
-    timestring = ''
+  command = list(map(str,['%s/../mfinder1.2/mfinder' % os.path.dirname(__file__),
+                          inFilename,
+                          '-s', motifsize,
+                          '-r', nrandom,
+                          '-f', outFilename,
+                          '-q',
+                          '-nu',]))
 
-  undirectedflag = ''
   if not directed:
-    undirectedflag = '-nd'
+    command.append('-nd')
+    
+  if membership:
+    for i in map(str,['-omem','-maxmem',maxmem]):
+      command.append(i)
 
-  parameters = (timestring, os.path.dirname(__file__), inFilename, motifsize, nrandom, undirectedflag, outFilename, membershipstring)
-
-  process = subprocess.Popen(command % parameters,
+  process = subprocess.Popen(command,
                              stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE,
-                             shell=True)
+                             stderr=subprocess.PIPE,)
 
   return process.communicate()
 
