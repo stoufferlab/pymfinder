@@ -536,7 +536,7 @@ gen_top_zscore_list(list64*res,list64**top_zscore_list_p,list64 *motif_ids)
 	list64_item *l_mtf,*l_top, *l_id;
 	Motif_res *mtf_res;
 	list64 *top_zscore_ids;
-	double min_zscore=INFINITY;
+	double min_zscore=MOTIF_INFINITY;
 	double *zscore;
 
 	list64_init(&top_zscore_ids);
@@ -569,7 +569,7 @@ gen_top_zscore_list(list64*res,list64**top_zscore_list_p,list64 *motif_ids)
 					*zscore=mtf_res->real_zscore;
 					list64_insert(top_zscore_ids,(int)mtf_res->id,(void*)zscore);
 					//update min_zscore
-					min_zscore=INFINITY;
+					min_zscore=MOTIF_INFINITY;
 					for(l_top=list64_get_next(top_zscore_ids,NULL);
 					l_top!=NULL;l_top=list64_get_next(top_zscore_ids,l_top)) {
 						if(*(double*)(l_top->p)<min_zscore)
@@ -601,7 +601,7 @@ gen_top_zscore_list(list64*res,list64**top_zscore_list_p,list64 *motif_ids)
 					*zscore=mtf_res->conc_real_zscore;
 					list64_insert(top_zscore_ids,(int)mtf_res->id,(void*)zscore);
 					//update min_zscore
-					min_zscore=INFINITY;
+					min_zscore=MOTIF_INFINITY;
 					for(l_top=list64_get_next(top_zscore_ids,NULL);
 					l_top!=NULL;l_top=list64_get_next(top_zscore_ids,l_top)) {
 						if(*(double*)(l_top->p)<min_zscore)
@@ -621,7 +621,7 @@ gen_top_conc_list(list64*res,list64**top_conc_list_p,list64 *motif_ids)
 	list64_item *l_mtf,*l_top, *l_id;
 	Motif_res *mtf_res;
 	list64 *top_conc_ids;
-	double min_conc=INFINITY;
+	double min_conc=MOTIF_INFINITY;
 	double *conc;
 
 	list64_init(&top_conc_ids);
@@ -655,7 +655,7 @@ gen_top_conc_list(list64*res,list64**top_conc_list_p,list64 *motif_ids)
 					*conc=mtf_res->conc_real;
 					list64_insert(top_conc_ids,(int)mtf_res->id,(void*)conc);
 					//update min_conc
-					min_conc=INFINITY;
+					min_conc=MOTIF_INFINITY;
 					for(l_top=list64_get_next(top_conc_ids,NULL);
 					l_top!=NULL;l_top=list64_get_next(top_conc_ids,l_top)) {
 						if(*(double*)(l_top->p)<min_conc)
@@ -688,7 +688,7 @@ gen_top_conc_list(list64*res,list64**top_conc_list_p,list64 *motif_ids)
 					*conc=mtf_res->conc_real;
 					list64_insert(top_conc_ids,(int)mtf_res->id,(void*)conc);
 					//update min_conc
-					min_conc=INFINITY;
+					min_conc=MOTIF_INFINITY;
 					for(l_top=list64_get_next(top_conc_ids,NULL);
 					l_top!=NULL;l_top=list64_get_next(top_conc_ids,l_top)) {
 						if(*(double*)(l_top->p)<min_conc)
@@ -707,7 +707,7 @@ gen_top_motifs_list(list64*res,list64**top_motifs_list_p,list64 *motif_ids)
 	list64_item *l_mtf,*l_top, *l_id;
 	Motif_res *mtf_res;
 	list64 *top_ids;
-	double min_score=INFINITY;
+	double min_score=MOTIF_INFINITY;
 	double *score;
 	double score_val;
 
@@ -742,7 +742,7 @@ gen_top_motifs_list(list64*res,list64**top_motifs_list_p,list64 *motif_ids)
 				*score=score_val;
 				list64_insert(top_ids,(int)mtf_res->id,(void*)score);
 				//update min_conc
-				min_score=INFINITY;
+				min_score=MOTIF_INFINITY;
 				for(l_top=list64_get_next(top_ids,NULL);
 				l_top!=NULL;l_top=list64_get_next(top_ids,l_top)) {
 					if(*(double*)(l_top->p)<min_score)

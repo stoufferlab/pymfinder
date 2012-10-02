@@ -37,8 +37,8 @@
 #define RC_ERR      -1
 #define RC_OK        0
 
-#define INFINITY     0x0fffffff
-#define UNDEFINED    888888
+#define MOTIF_INFINITY  0x0fffffff
+#define UNDEFINED       888888
 
 
 #define REAL_NET     1
