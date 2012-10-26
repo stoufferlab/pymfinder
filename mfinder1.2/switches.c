@@ -65,203 +65,204 @@ extern Network *G_N;
 int
 gen_rand_network_switches_method_conserve_double_edges(Network **RN_p, double *switch_ratio)
 {
-	int num_of_switchs;
-	int s1,s2,t1,t2;
-	int i,j,k,w;
-	int twin_i,twin_j;
-	Network *RN;
-	int rand_network_checked=FALSE;
-	int tot_switches=0;
-	int success_switches=0;
-	double switches_range;
+  int num_of_switchs;
+  int s1,s2,t1,t2;
+  int i,j,k,w,xxx;
+  int twin_i,twin_j;
+  Network *RN;
+  int rand_network_checked=FALSE;
+  int tot_switches=0;
+  int success_switches=0;
+  double switches_range;
 	
-	while (!rand_network_checked) {
-		//duplicate source network
-		duplicate_network(G_N,&RN,"random_network");
-		if (DEBUG_LEVEL>11)
-			dump_network(stdout,RN);
-		
-		//Switch double edges
-		
-		if(RN->e_dbl_num<=1)
-			num_of_switchs=0;
-		else {
-			// num of switches is round(10*(1+rand)*#edges)
-			//num of edges in undirfecetd is actually *2 therefore divided by 2
-			switches_range=2*GNRL_ST.r_switch_factor*RN->e_dbl_num/2;
-			num_of_switchs=(int)switches_range+get_rand((int)switches_range);
-		}
-		w=0;//all trials
-		k=0;//successfull switches
+  while (!rand_network_checked) {
+    //duplicate source network
+    duplicate_network(G_N,&RN,"random_network");
+    if (DEBUG_LEVEL>11)
+      dump_network(stdout,RN);
 
-		if (GNRL_ST.out_log_flag==TRUE)
-			fprintf(GNRL_ST.log_fp,"Double edges total number of switches to do : %d\n", num_of_switchs); 
+    for(xxx=0;xxx<10;xxx++){
+      //Switch double edges
+      if(RN->e_dbl_num<=1)
+	num_of_switchs=0;
+      else {
+	// num of switches is round(10*(1+rand)*#edges)
+	// num of edges in undirected is actually *2 therefore divide by 2
+	switches_range=2*GNRL_ST.r_switch_factor*RN->e_dbl_num/2;
+	num_of_switchs=(int)switches_range+get_rand((int)switches_range);
+      }
+      w=0;//all trials
+      k=0;//successfull switches
+
+      if (GNRL_ST.out_log_flag==TRUE)
+	fprintf(GNRL_ST.log_fp,"Double edges total number of switches to do : %d\n", num_of_switchs); 
 		
-		while( (!GNRL_ST.r_global_switch_mode && w<num_of_switchs )){
-			w++;
-			if( !(w % 50000) && (GNRL_ST.out_log_flag==TRUE) )
-				fprintf(GNRL_ST.log_fp,"Double edges Switches: success : %d tries : %d\n",k,w);
-			// random edges to choose :
-			//only when finding a proper pair of edges make the switch
-			i=get_rand(RN->e_dbl_num);
-			j=get_rand(RN->e_dbl_num);
-			if(i==j)
-				continue;
-			//this is needed to know if the twin is i-1 or i+1
-			if(i & 0x1) 
-				twin_i=i+1;
-			else
-				twin_i=i-1;
-			if(j & 0x1)
-				twin_j=j+1;
-			else
-				twin_j=j-1;
+      while( (!GNRL_ST.r_global_switch_mode && w<num_of_switchs )){
+	w++;
+	if( !(w % 50000) && (GNRL_ST.out_log_flag==TRUE) )
+	  fprintf(GNRL_ST.log_fp,"Double edges Switches: success : %d tries : %d\n",k,w);
+	// random edges to choose :
+	//only when finding a proper pair of edges make the switch
+	i=get_rand(RN->e_dbl_num);
+	j=get_rand(RN->e_dbl_num);
+	if(i==j)
+	  continue;
+	//this is needed to know if the twin is i-1 or i+1
+	if(i & 0x1) 
+	  twin_i=i+1;
+	else
+	  twin_i=i-1;
+	if(j & 0x1)
+	  twin_j=j+1;
+	else
+	  twin_j=j-1;
 			
-			s1=RN->e_arr_dbl[i].s;
-			t1=RN->e_arr_dbl[i].t;
-			s2=RN->e_arr_dbl[j].s;
-			t2=RN->e_arr_dbl[j].t;
+	s1=RN->e_arr_dbl[i].s;
+	t1=RN->e_arr_dbl[i].t;
+	s2=RN->e_arr_dbl[j].s;
+	t2=RN->e_arr_dbl[j].t;
 			
 			
-			//check : 1.that there are no crossing edges in the network,
-			//		  2.there are no common vertices of these 2 edges
-			//if hasnt passed the check then have to find other pair to switch
-			if ( !( MatGet(RN->mat,s1,t2) || MatGet(RN->mat,s2,t1) || MatGet(RN->mat,t1,s2)|| MatGet(RN->mat,t2,s1)) 
-				&& (s1!=t2) &&(s2!=t1) && (s1!=s2) && (t1!=t2) ) {
-				if(DEBUG_LEVEL==1 && GNRL_ST.out_log_flag) {
-					fprintf(GNRL_ST.log_fp,"switch #%d: (%d %d) (%d %d)\n", k,s1,t1,s2,t2);
-					fprintf(GNRL_ST.log_fp,"i: %d, twin i %d , j: %d twin j : %d\n", i,twin_i,j,twin_j);
-				}
-				//make the switch
-				//update edges array
-				RN->e_arr_dbl[i].t=t2;
-				RN->e_arr_dbl[twin_i].s=t2;
-				RN->e_arr_dbl[j].t=t1;
-				RN->e_arr_dbl[twin_j].s=t1;
-				if(DEBUG_LEVEL==1 && GNRL_ST.out_log_flag) {
-					fprintf(GNRL_ST.log_fp,"(%d %d) (%d %d) (%d %d) (%d %d)\n",
-						RN->e_arr_dbl[i].s,RN->e_arr_dbl[i].t,
-						RN->e_arr_dbl[twin_i].s,RN->e_arr_dbl[twin_i].t,
-						RN->e_arr_dbl[j].s,RN->e_arr_dbl[j].t,
-						RN->e_arr_dbl[twin_j].s,RN->e_arr_dbl[twin_j].t
-						);
-				}
+	//check : 1.that there are no crossing edges in the network,
+	//	2.there are no common vertices of these 2 edges
+	//if hasnt passed the check then have to find other pair to switch
+	if ( !( MatGet(RN->mat,s1,t2) || MatGet(RN->mat,s2,t1) || MatGet(RN->mat,t1,s2)|| MatGet(RN->mat,t2,s1)) 
+	     && (s1!=t2) &&(s2!=t1) && (s1!=s2) && (t1!=t2) ) {
+	  if(DEBUG_LEVEL==1 && GNRL_ST.out_log_flag) {
+	    fprintf(GNRL_ST.log_fp,"switch #%d: (%d %d) (%d %d)\n", k,s1,t1,s2,t2);
+	    fprintf(GNRL_ST.log_fp,"i: %d, twin i %d , j: %d twin j : %d\n", i,twin_i,j,twin_j);
+	  }
+	  //make the switch
+	  //update edges array
+	  RN->e_arr_dbl[i].t=t2;
+	  RN->e_arr_dbl[twin_i].s=t2;
+	  RN->e_arr_dbl[j].t=t1;
+	  RN->e_arr_dbl[twin_j].s=t1;
+	  if(DEBUG_LEVEL==1 && GNRL_ST.out_log_flag) {
+	    fprintf(GNRL_ST.log_fp,"(%d %d) (%d %d) (%d %d) (%d %d)\n",
+		    RN->e_arr_dbl[i].s,RN->e_arr_dbl[i].t,
+		    RN->e_arr_dbl[twin_i].s,RN->e_arr_dbl[twin_i].t,
+		    RN->e_arr_dbl[j].s,RN->e_arr_dbl[j].t,
+		    RN->e_arr_dbl[twin_j].s,RN->e_arr_dbl[twin_j].t
+		    );
+	  }
 				
-				//update matrix
-				MatAsgn(RN->mat,s1,t1,0);
-				MatAsgn(RN->mat,t1,s1,0);
-				MatAsgn(RN->mat,s2,t2,0);
-				MatAsgn(RN->mat,t2,s2,0);
-				if(DEBUG_LEVEL==1 && GNRL_ST.out_log_flag)
-					dump_network(GNRL_ST.log_fp,RN);
-				MatAsgn(RN->mat,s1,t2,1);
-				MatAsgn(RN->mat,t2,s1,1);
-				MatAsgn(RN->mat,s2,t1,1);
-				MatAsgn(RN->mat,t1,s2,1);
-				if(DEBUG_LEVEL==1 && GNRL_ST.out_log_flag)
-					dump_network(GNRL_ST.log_fp,RN);
-				k++;
-			}
-		}
-		if (GNRL_ST.out_log_flag==TRUE)
-			fprintf(GNRL_ST.log_fp,"Double Edges: Finished\n");
-		tot_switches+=w;
-		success_switches+=k;
+	  //update matrix
+	  MatAsgn(RN->mat,s1,t1,0);
+	  MatAsgn(RN->mat,t1,s1,0);
+	  MatAsgn(RN->mat,s2,t2,0);
+	  MatAsgn(RN->mat,t2,s2,0);
+	  if(DEBUG_LEVEL==1 && GNRL_ST.out_log_flag)
+	    dump_network(GNRL_ST.log_fp,RN);
+	  MatAsgn(RN->mat,s1,t2,1);
+	  MatAsgn(RN->mat,t2,s1,1);
+	  MatAsgn(RN->mat,s2,t1,1);
+	  MatAsgn(RN->mat,t1,s2,1);
+	  if(DEBUG_LEVEL==1 && GNRL_ST.out_log_flag)
+	    dump_network(GNRL_ST.log_fp,RN);
+	  k++;
+	}
+      }
+      if (GNRL_ST.out_log_flag==TRUE)
+	fprintf(GNRL_ST.log_fp,"Double Edges: Finished\n");
+      tot_switches+=w;
+      success_switches+=k;
 
-		//Switch single edges	
+      //Switch single edges	
 		
-		if(RN->e_sin_num<=1)
-			num_of_switchs=0;
-		else {
-			// num of switches is round(10*(1+rand)*#edges)
-			switches_range=GNRL_ST.r_switch_factor*RN->e_sin_num;
-			num_of_switchs=(int)switches_range+get_rand((int)switches_range);
-		}
-		w=0; //num of trials 
-		k=0; //successfull trials
-		if (GNRL_ST.out_log_flag==TRUE)
-			fprintf(GNRL_ST.log_fp,"Single edges total number of switches to do : %d\n", num_of_switchs); 
+      if(RN->e_sin_num<=1)
+	num_of_switchs=0;
+      else {
+	// num of switches is round(10*(1+rand)*#edges)
+	switches_range=GNRL_ST.r_switch_factor*RN->e_sin_num;
+	num_of_switchs=(int)switches_range+get_rand((int)switches_range);
+      }
+      w=0; //num of trials 
+      k=0; //successfull trials
+      if (GNRL_ST.out_log_flag==TRUE)
+	fprintf(GNRL_ST.log_fp,"Single edges total number of switches to do : %d\n", num_of_switchs); 
 		
-		while( (!GNRL_ST.r_global_switch_mode && w<num_of_switchs )){
-			w++;
-			if(!(w % 50000) && (GNRL_ST.out_log_flag==TRUE))
-				fprintf(GNRL_ST.log_fp,"Single edges Switches: success : %d tries : %d\n",k,w);
-			//get random indexes for edges
-			i=get_rand(RN->e_sin_num);
-			j=get_rand(RN->e_sin_num);
-			if (i==j)
-				continue;
+      while( (!GNRL_ST.r_global_switch_mode && w<num_of_switchs )){
+	w++;
+	if(!(w % 50000) && (GNRL_ST.out_log_flag==TRUE))
+	  fprintf(GNRL_ST.log_fp,"Single edges Switches: success : %d tries : %d\n",k,w);
+	//get random indexes for edges
+	i=get_rand(RN->e_sin_num);
+	j=get_rand(RN->e_sin_num);
+	if (i==j)
+	  continue;
 			
-			s1=RN->e_arr_sin[i].s;
-			t1=RN->e_arr_sin[i].t;
-			s2=RN->e_arr_sin[j].s;
-			t2=RN->e_arr_sin[j].t;
+	s1=RN->e_arr_sin[i].s;
+	t1=RN->e_arr_sin[i].t;
+	s2=RN->e_arr_sin[j].s;
+	t2=RN->e_arr_sin[j].t;
 			
-			//check : 1.that there are no crossing edges,
-			//		  2.there are no common vertices of these 2 edges
-			//		  3.there are no self edges 
-			//if hasnt passed the check then have to find other pair to switch
-			if ( !( MatGet(RN->mat,s1,t2) || MatGet(RN->mat,s2,t1) || MatGet(RN->mat,t2,s1) || MatGet(RN->mat,t1,s2) )
-				&& (s1!=s2) && (s1!=t2) && (t1!=s2) && (t1!=t2) && (s1!=t1) && (s2!=t2)) {
-				//make the switch
-				//update edges array
-				RN->e_arr_sin[i].t=t2;
-				RN->e_arr_sin[j].t=t1;
-				//update matrix
-				MatAsgn(RN->mat,s1,t1,0);
-				MatAsgn(RN->mat,s2,t2,0);
-				MatAsgn(RN->mat,s1,t2,1);
-				MatAsgn(RN->mat,s2,t1,1);
+	//check : 1.that there are no crossing edges,
+	//		  2.there are no common vertices of these 2 edges
+	//		  3.there are no self edges 
+	//if hasnt passed the check then have to find other pair to switch
+	if ( !( MatGet(RN->mat,s1,t2) || MatGet(RN->mat,s2,t1) || MatGet(RN->mat,t2,s1) || MatGet(RN->mat,t1,s2) )
+	     && (s1!=s2) && (s1!=t2) && (t1!=s2) && (t1!=t2) && (s1!=t1) && (s2!=t2)) {
+	  //make the switch
+	  //update edges array
+	  RN->e_arr_sin[i].t=t2;
+	  RN->e_arr_sin[j].t=t1;
+	  //update matrix
+	  MatAsgn(RN->mat,s1,t1,0);
+	  MatAsgn(RN->mat,s2,t2,0);
+	  MatAsgn(RN->mat,s1,t2,1);
+	  MatAsgn(RN->mat,s2,t1,1);
 				
-				k++;
-			}
-		}
-		if(DEBUG_LEVEL>1)
-			dump_network(stdout,RN);
-		
-		if (GNRL_ST.out_log_flag==TRUE)
-				fprintf(GNRL_ST.log_fp,"Single Edges: Finished\n");
-		
-		tot_switches+=w;
-		success_switches+=k;
-		
-		//check that there are no self edges. If there are any then start again
-		rand_network_checked = TRUE;
-		if(GNRL_ST.calc_self_edges == FALSE){
-			for(i=1;i<=RN->vertices_num;i++) {
-				if( MatGet(RN->mat,i,i)==1 ) {
-					printf("Self edges still exist building random graph again\n");
-					rand_network_checked=FALSE;
-					free_network_mem(RN);
-					break;
-				}
-			}
-		}
+	  k++;
 	}
+      }
+      if(DEBUG_LEVEL>1)
+	dump_network(stdout,RN);
+		
+      if (GNRL_ST.out_log_flag==TRUE)
+	fprintf(GNRL_ST.log_fp,"Single Edges: Finished\n");
+		
+      tot_switches+=w;
+      success_switches+=k;
+    }		
 
-	//merge lists to RN->e_arr
-	//
-	j=0;
-	for(i=1;i<=RN->e_dbl_num;i++) {
-		RN->e_arr[++j].s=RN->e_arr_dbl[i].s;
-		RN->e_arr[j].t=RN->e_arr_dbl[i].t;
+    //check that there are no self edges. If there are any then start again
+    rand_network_checked = TRUE;
+    if(GNRL_ST.calc_self_edges == FALSE){
+      for(i=1;i<=RN->vertices_num;i++) {
+	if( MatGet(RN->mat,i,i)==1 ) {
+	  printf("Self edges still exist building random graph again\n");
+	  rand_network_checked=FALSE;
+	  free_network_mem(RN);
+	  break;
 	}
-	for(i=1;i<=RN->e_sin_num;i++) {
-		RN->e_arr[++j].s=RN->e_arr_sin[i].s;
-		RN->e_arr[j].t=RN->e_arr_sin[i].t;
-	}
+      }
+    }
+  }
+
+  //merge lists to RN->e_arr
+  //
+  j=0;
+  for(i=1;i<=RN->e_dbl_num;i++) {
+    RN->e_arr[++j].s=RN->e_arr_dbl[i].s;
+    RN->e_arr[j].t=RN->e_arr_dbl[i].t;
+  }
+  for(i=1;i<=RN->e_sin_num;i++) {
+    RN->e_arr[++j].s=RN->e_arr_sin[i].s;
+    RN->e_arr[j].t=RN->e_arr_sin[i].t;
+  }
 	
-	if(w==num_of_switchs*DESPAIR_RATIO && num_of_switchs>0) {
-		if(GNRL_ST.out_log_flag)
-			fprintf(GNRL_ST.log_fp,"Reached Despair ratio\n");
-	}
-	if(DEBUG_LEVEL>11)
-		dump_network(stdout,RN);
-	*RN_p=RN;
-	*switch_ratio=(double)success_switches/(double)tot_switches;
-	if(success_switches==0)
-		printf("Warning: Could not make any Switches in generating random network\n"); 
-	return RC_OK;
+  if(w==num_of_switchs*DESPAIR_RATIO && num_of_switchs>0) {
+    if(GNRL_ST.out_log_flag)
+      fprintf(GNRL_ST.log_fp,"Reached Despair ratio\n");
+  }
+  if(DEBUG_LEVEL>11)
+    dump_network(stdout,RN);
+  *RN_p=RN;
+  *switch_ratio=(double)success_switches/(double)tot_switches;
+  if(success_switches==0)
+    printf("Warning: Could not make any Switches in generating random network\n"); 
+  return RC_OK;
 }
 
 
