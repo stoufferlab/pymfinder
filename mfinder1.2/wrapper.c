@@ -1,0 +1,507 @@
+/************************************************************************
+*
+*
+*
+*
+*
+*
+*
+*
+*************************************************************************/
+
+#include "globals.h"
+#include "stouffer.h"
+
+/*************************** Global variables ***************************/
+
+/******************************* Externs ********************************/
+// input file name
+extern char *input_network_fname;
+
+// crazy wicked wild "general program info and flags"
+extern Gnrl_st GNRL_ST;
+
+// confusing as hell result table
+extern Res_tbl RES_TBL;
+
+// from the globals in main.c
+extern int DEBUG_LEVEL;
+
+// need the bloody network as an extern, I guess
+extern Network *G_N;
+
+extern list64 *final_res, *final_res_all;
+
+/************************************************************************/
+
+void set_default_options(){
+  //copied from process_input_args in main.c
+  GNRL_ST.mtf_sz=DEFAULT_MTF_SZ;
+  GNRL_ST.rnd_net_num=DEFAULT_RAND_NETWORK_NUM;
+  GNRL_ST.t_init=T0;
+  GNRL_ST.iteration_factor=ITERATION_F;
+  GNRL_ST.e_thresh=ETHRESH;
+  GNRL_ST.use_stubs_method=FALSE;
+  GNRL_ST.long_out_flag=FALSE;
+  GNRL_ST.calc_unique_flag=TRUE;
+  GNRL_ST.calc_roles=FALSE;
+  GNRL_ST.input_net_format=SRC_TRG_FORMAT;
+  GNRL_ST.undirected_flag=FALSE;
+  GNRL_ST.calc_self_edges=FALSE;
+  GNRL_ST.calc_weights=FALSE;
+  GNRL_ST.run_prob_app=FALSE;
+  GNRL_ST.prob_base_samples_num=0;
+  GNRL_ST.prob_converge_mode=FALSE;
+  GNRL_ST.prob_conv_diff=CONVERGNESS_DIFF_CONST;
+  GNRL_ST.prob_conv_conc_th=CONC_THRESHOLD;
+  GNRL_ST.unique_th=UNIQUE_TH;
+  GNRL_ST.force_unique_th=FALSE;
+  GNRL_ST.mfactor_th=MFACTOR_TH;
+  GNRL_ST.zfactor_th=ZSCORE_TH;
+  GNRL_ST.pval_th=PVAL_TH;
+  GNRL_ST.max_members_list_sz=1000;
+  GNRL_ST.top_motifs_list_sz=TOP_MOTIF_LIST_SZ;
+  GNRL_ST.out_log_flag=FALSE;
+  GNRL_ST.out_s_mat_flag=FALSE;
+  GNRL_ST.out_l_mat_flag=FALSE;
+  GNRL_ST.out_s_c_mat_flag=FALSE;
+  GNRL_ST.out_members=FALSE;
+  GNRL_ST.out_rand_mat_flag=FALSE;
+  GNRL_ST.out_roles=FALSE;
+  GNRL_ST.out_clustering=FALSE;
+  GNRL_ST.quiet_mode=FALSE;
+  GNRL_ST.use_metropolis=FALSE;
+  GNRL_ST.use_clustering=FALSE;
+  GNRL_ST.dont_search_real=FALSE;
+  GNRL_ST.out_intermediate=FALSE;
+  GNRL_ST.out_non_dangling_motifs=FALSE;
+  GNRL_ST.r_switch_factor=(double)R_SWITCH_FACTOR;
+  GNRL_ST.r_global_switch_mode=FALSE;
+  GNRL_ST.list_members=FALSE;
+  GNRL_ST.specific_subgraph_members=0; //no specific subgraph members
+  GNRL_ST.efc_prob=FALSE;
+  GNRL_ST.out_all_rand_networks=FALSE;
+  GNRL_ST.r_grassberger=FALSE;
+  GNRL_ST.r_grass_colony_sz=0;
+  GNRL_ST.r_grass_colony_max_population=MAX_COLONY_SZ_RATIO;
+  GNRL_ST.r_dont_conserve_mutuals=FALSE;
+  GNRL_ST.dont_die=FALSE;
+  GNRL_ST.r_conserve_layers=FALSE;
+  GNRL_ST.r_layers_num=0;
+}
+
+int
+load_network_from_array(Network **N_p, int* edges, int edges_num)
+{
+  int   rc=RC_OK,s,t,i,j,weight;
+  list_item *l_e;
+  int max_node=0;
+  //FILE *fp;
+  Network *N;
+  int e_idx;
+  int self_edge_exists=FALSE;
+  int self_edge_number=0;
+  int matVal = 0;
+
+  N=(Network*)calloc(1,sizeof(Network));
+  N->name="I came from an array, sucka!";
+  N->edges_num = 0;
+
+  for(i=0;i<edges_num;i++){
+    s = edges[i*3];
+    t = edges[i*3+1];
+    if (s!=t || GNRL_ST.calc_self_edges == TRUE)
+      N->edges_num += 1;
+  }
+
+  N->e_arr=(Edge*)calloc(N->edges_num+1,sizeof(Edge));
+  for(i=N->edges_num;i>0;i--){
+    //SRC->TRG format
+    if(GNRL_ST.input_net_format==SRC_TRG_FORMAT){
+      s = edges[(i-1)*3];
+      t = edges[(i-1)*3+1];
+      weight = edges[(i-1)*3+2];
+    }
+    //TRG->SRC format
+    else{
+      t = edges[(i-1)*3];
+      s = edges[(i-1)*3+1];
+      weight = edges[(i-1)*3+2];
+    }
+
+    if (s!=t || GNRL_ST.calc_self_edges == TRUE){
+      N->e_arr[i].s=s;
+      N->e_arr[i].t=t;
+      N->e_arr[i].weight=weight;
+
+      if (s>max_node) max_node=s;
+      if (t>max_node) max_node=t;
+    }
+
+    if(s == t)
+      {
+	self_edge_number++;
+      }
+  }    
+
+  ///////////////////////////////////////////////////////////////////
+  // ALL OF THE ITEMS BELOW ARE COPIED FROM load_network IN GLOBALS.H
+  ///////////////////////////////////////////////////////////////////
+
+  N->vertices_num=max_node;
+
+  rc |= MatInit(&N->mat,N->vertices_num,SPARSE);
+  if(rc == RC_ERR) {
+    printf("Error : Memory allocation failure\n");
+    at_exit(-1);
+  }
+
+  //assign matrix entries according to edges
+  for(i=1; i<=N->edges_num; i++) {
+    if(GNRL_ST.calc_weights == TRUE) {
+      MatAsgn(N->mat,N->e_arr[i].s,N->e_arr[i].t,N->e_arr[i].weight);
+    }else{
+      if(MatGet(N->mat,N->e_arr[i].s,N->e_arr[i].t) != 0) {
+	printf("Error : Duplicate appearance of the edge (%d,%d) \n\tfound in the Network\n ",
+	       N->e_arr[i].s,N->e_arr[i].t);
+	at_exit(-1);
+      }else{
+	MatAsgn(N->mat,N->e_arr[i].s,N->e_arr[i].t,1);
+      }
+    }
+  }
+  //if efc_prob app then
+  //create e_map matrix mapping of edges [s,t] to their index in e_arr
+  if(GNRL_ST.efc_prob){
+    rc |= MatInit(&N->e_map,N->vertices_num,SPARSE);
+    if(rc == RC_ERR) {
+      printf("Error : Memory allocation failure\n");
+      at_exit(-1);
+    }
+    for(i=1; i<=N->edges_num; i++)
+
+      MatAsgn(N->e_map,N->e_arr[i].s,N->e_arr[i].t,i);
+  }
+  //check there are no Self edges- if there are any then output them to screen and  stop
+
+  if(GNRL_ST.calc_self_edges == FALSE){
+    for(i=1; i<=N->vertices_num; i++) {
+      if(MatGet(N->mat,i,i)==1) {
+	fprintf(stdout,"Self edges exist in Input Network!!!\n");
+	fprintf(stdout,"Self Edges : (%d,%d)\t",i,i);
+	self_edge_exists=TRUE;
+      }
+    }
+    if(self_edge_exists==TRUE)
+      at_exit(-1);
+  }
+
+
+  //allocate and fill arrays of single edges and double edges
+  N->e_arr_sin=(Edge*)calloc(N->edges_num+1,sizeof(Edge));
+  N->e_arr_dbl=(Edge*)calloc((N->edges_num+1),sizeof(Edge));
+  N->e_sin_num=0;
+  N->e_dbl_num=0;
+  N->roots_num=0;
+  N->leafs_num=0;
+  //allocate indeg and out deg arrays
+  N->indeg=(int*)calloc(N->vertices_num+2,sizeof(int));
+  N->outdeg=(int*)calloc(N->vertices_num+2,sizeof(int));
+  N->doubledeg=(int*)calloc(N->vertices_num+2,sizeof(int));
+  if(GNRL_ST.calc_self_edges == TRUE){
+    N->self_edge=(int*)calloc(N->vertices_num+2,sizeof(int));
+  }
+  //actually matrix is sparse anyway now
+  if(N->mat->type == SPARSE) {
+    for(i=1;i<=N->vertices_num;i++) {
+      for(j=1;j<=N->vertices_num;j++) {
+	if( (matVal = MatGet(N->mat,i,j))) {
+	  //if an edge and is not self edge
+	  if(i != j){
+	    //if the twin edge exists
+	    if(MatGet(N->mat,j,i)){
+	      //not inserted yet
+	      if(j>i) {
+		//double edge- this way always the twin pair has indexes 2x-1,2x
+		N->e_arr_dbl[++N->e_dbl_num].s=i;
+		N->e_arr_dbl[N->e_dbl_num].t=j;
+		N->e_arr_dbl[N->e_dbl_num].weight=matVal;
+		N->e_arr_dbl[++N->e_dbl_num].s=j;
+		N->e_arr_dbl[N->e_dbl_num].t=i;
+		N->e_arr_dbl[N->e_dbl_num].weight=matVal;
+	      }
+	    }
+	    else {
+	      //single edge
+	      N->e_arr_sin[++N->e_sin_num].s=i;
+	      N->e_arr_sin[N->e_sin_num].t=j;
+	      N->e_arr_sin[N->e_sin_num].weight=matVal;
+	    }
+	  }
+	  else //self edge
+	    {
+	      N->e_arr_sin[++N->e_sin_num].s=i;
+	      N->e_arr_sin[N->e_sin_num].t=j;
+	      N->e_arr_sin[N->e_sin_num].weight=matVal;
+	    }
+	}
+      }
+    }
+
+    //fill in deg and out deg arrays
+    for(i=0;i<=N->vertices_num;i++) {
+      N->indeg[i]=0;
+      N->outdeg[i]=0;
+      if(GNRL_ST.calc_self_edges == TRUE)
+	{
+	  N->self_edge[i]=FALSE;
+	}
+    }
+    for (i=1; i<=N->vertices_num;i++){
+      if(N->mat->spr->m[i].to==NULL)
+	N->outdeg[i]=0;
+      else
+	N->outdeg[i]=N->mat->spr->m[i].to->size;
+      if(N->mat->spr->m[i].from==NULL)
+	N->indeg[i]=0;
+      else
+	N->indeg[i]=N->mat->spr->m[i].from->size;
+      if((N->mat->spr->m[i].self_edge == 1) && (GNRL_ST.calc_self_edges == TRUE))
+	{
+	  N->self_edge[i] = TRUE;
+	}
+    }
+  }
+
+  //statistics and global info about the network
+  N->con_vertices_num=0;
+  N->hub_deg=0;
+  N->hub=0;
+  N->in_hub_deg=0;
+  N->in_hub=0;
+  N->out_hub_deg=0;
+  N->out_hub=0;
+  //calc total num of connected vertices
+  //and find hub preferenced
+  for(i=1; i<=N->vertices_num;i++){
+    if( (N->indeg[i]!=0) || (N->outdeg[i]!=0) )
+      N->con_vertices_num++;
+    if( ((N->indeg[i] + N->outdeg[i]) > N->hub_deg) ){
+      N->hub_deg=N->indeg[i] + N->outdeg[i];
+      N->hub=i;
+    }
+    if( N->indeg[i] > N->in_hub_deg){
+      N->in_hub_deg=N->indeg[i];
+      N->in_hub=i;
+    }
+    if( N->outdeg[i] > N->out_hub_deg){
+      N->out_hub_deg=N->outdeg[i];
+      N->out_hub=i;
+    }
+  }
+
+  //if calc roles then init array or roles vector for all nodes
+  if(GNRL_ST.calc_roles==TRUE && GNRL_ST.mtf_sz==3) {
+    if( (N->roles_vec=(char**)calloc(N->vertices_num+1,sizeof(char*))) ==NULL)
+      return RC_ERR;
+    for(i=1;i<=N->vertices_num;i++)
+      if( (N->roles_vec[i]=(char*)calloc(TOTAL_ROLES_3_NUM+1,sizeof(char))) ==NULL)
+	return RC_ERR;
+  }
+  //if use clusterring in random network genereation
+  if(GNRL_ST.use_clustering){
+    N->cluster_degree=(double*)calloc(N->vertices_num+2,sizeof(double));
+    for(i=0;i<=N->vertices_num;i++) {
+      N->cluster_degree[i]=0.0;
+    }
+    //fill clustering series
+    clustering_series(N,NULL);
+  }
+  //if efc prob approach then init hub_edges_vec and hub_edges_indices
+  if(GNRL_ST.efc_prob){
+    N->hub_edges_vec=(int*)calloc(N->edges_num+1,sizeof(int));
+    N->hub_edges_indices=(int*)calloc(N->hub_deg+1,sizeof(int));
+
+    //fill hub vector and hub indices
+    i=0;
+    for(l_e=list_get_next(N->e_map->spr->m[N->hub].to,NULL);l_e!=NULL;
+	l_e=list_get_next(N->e_map->spr->m[N->hub].to,l_e)) {
+      e_idx=*(int*)l_e->p;
+      N->hub_edges_indices[++i]=e_idx;
+      N->hub_edges_vec[e_idx]=i;
+    }
+    for(l_e=list_get_next(N->e_map->spr->m[N->hub].from,NULL);l_e!=NULL;
+	l_e=list_get_next(N->e_map->spr->m[N->hub].from,l_e)) {
+      e_idx=*(int*)l_e->p;
+      N->hub_edges_indices[++i]=e_idx;
+      N->hub_edges_vec[e_idx]=i;
+    }
+    if(i!=N->hub_deg)
+      printf("Error in Hub degree\n");
+  }
+  //if conserve layers in random netowrks
+  if(GNRL_ST.r_conserve_layers==TRUE){
+    N->num_of_layers=GNRL_ST.r_layers_num;
+    N->layer_node_num=(int*)calloc(N->num_of_layers+1,sizeof(int));
+    N->layer_edges_num=(int*)calloc(N->num_of_layers+1,sizeof(int));
+    //copy num of nodes in each layer
+    for(i=1;i<=N->num_of_layers;i++)
+      N->layer_node_num[i]=GNRL_ST.r_layer_sz[i];
+    //run through e_arr and fill N->layer_edges_num
+    //this is required for the randomizing process - in order to swtich edges
+    //between nodes in the same layers only
+    max_node=0;
+    j=1;
+    for(i=1;i<=N->num_of_layers;i++){
+      max_node+=N->layer_node_num[i];
+      while( (N->e_arr[j].s<=max_node) && (j<=N->edges_num) ){
+	N->layer_edges_num[i]++;
+	j++;
+      }
+    }
+    //sanity check - that num of edges in  layers sum to total num of edges
+    j=0;
+    for(i=1;i<=N->num_of_layers;i++)
+      j+=N->layer_edges_num[i];
+    if(j!=N->edges_num){
+      printf("\nERROR: in '-rcl' flag, check layers info\n");
+      at_exit(-1);
+    }
+  }
+  if(DEBUG_LEVEL>11)
+    dump_network(stdout,N);
+  *N_p=N;
+  return rc;
+}
+
+/*
+* function : read_network
+*   read network from different input types
+*
+* arguments:
+*   N_p - reference to network structure
+*   mfinderi - mfinder wrapper input struct
+*
+* return values:
+*   RC_OK - if not error occured
+*   RC_ERR - if error occured
+*/
+int
+read_network(Network **N_p, mfinder_input mfinderi)
+{
+  int rc=RC_OK;
+
+  // load network from input file
+  if(mfinderi.Filename != NULL){
+    rc = load_network(&G_N,mfinderi.Filename);
+    if (rc == RC_ERR) {
+      printf("load network from file failed\n");
+      return RC_ERR;
+    }
+  }
+  // load network from array of edge info
+  // this exists for streamlined use of the python module
+  else{
+    rc = load_network_from_array(&G_N,mfinderi.Edges,mfinderi.NumEdges);
+    if (rc == RC_ERR) {
+      printf("load network from array failed\n");
+      return RC_ERR;
+    }
+  }
+
+  return rc;
+}
+
+/********************************************************
+ * function : motif_structure
+ *	Calculate the motif structure statistics
+ * arguments:
+ *   AAA
+ *   BBB
+ *   CCC
+ * return values:
+ *   XXX
+ *   YYY
+ *********************************************************/
+
+list64* motif_structure(mfinder_input mfinderi){
+  set_default_options();
+
+  // turn on quiet mode
+  GNRL_ST.quiet_mode=TRUE;
+
+  // what size motif are we talking about?
+  GNRL_ST.mtf_sz = mfinderi.MotifSize;
+
+  // against how many randomizations should we compare?
+  GNRL_ST.rnd_net_num = mfinderi.NRandomizations;
+
+  // ignore the uniqueness bit
+  GNRL_ST.unique_th=0;
+  GNRL_ST.calc_unique_flag=FALSE;
+
+  // ignore self edges
+  GNRL_ST.calc_self_edges=FALSE;
+
+  // no weights in the input
+  //GNRL_ST.calc_weights = TRUE;
+
+  // general initialization
+  int rc = gnrl_init();
+  if (rc == RC_ERR) {
+    printf("general init failed\n");
+    return NULL;
+  }/*else
+     printf("general init succeeded\n");*/
+
+  // initialize the random seed
+  init_random_seed();
+  /*printf("initialized random seed\n");*/
+
+  rc = read_network(&G_N,mfinderi);
+  if(rc==RC_ERR)
+    printf("load network failed\n");
+
+  Network *N;
+  rc = duplicate_network(G_N,&N,"real_network");
+  if (rc == RC_ERR) {
+    printf("duplicate network failed\n");
+    return NULL;
+  }/*else
+     printf("duplicate network succeeded\n");*/
+
+  //exhaustive search motif size n
+  rc = count_subgraphs(N, GNRL_ST.mtf_sz, &RES_TBL.real, REAL_NET);
+  if (rc == RC_ERR) {
+    printf("real search failed\n");
+    return NULL;
+  }/*else
+     printf("real search succeeded\n");*/
+
+  //calc result after isomorphism of ids
+  join_subgraphs_res(&RES_TBL.real, GNRL_ST.mtf_sz, 0);
+
+  if(GNRL_ST.rnd_net_num > 0){
+    rc = process_rand_networks(&RES_TBL, GNRL_ST.mtf_sz);
+    if (rc == RC_ERR) {
+      printf("random network analysis failed\n");
+      return NULL;
+    }/*else
+       printf("random network analysis succeeded\n");*/
+  }
+
+  //calculate final results
+  calc_final_results(&RES_TBL, &final_res, &final_res_all, GNRL_ST.rnd_net_num);
+
+  // release memory of various objects
+  free_network_mem(N);
+  free(N);
+  //final_res_free(final_res);
+  //final_res_free(final_res_all);
+
+  // return the crazy results table
+  if(GNRL_ST.mtf_sz<=4)
+    return final_res_all;
+  else
+    return final_res;
+}
