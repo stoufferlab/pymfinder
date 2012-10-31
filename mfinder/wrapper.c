@@ -443,9 +443,6 @@ list64* motif_structure(mfinder_input mfinderi){
   // ignore self edges
   GNRL_ST.calc_self_edges=FALSE;
 
-  // no weights in the input
-  //GNRL_ST.calc_weights = TRUE;
-
   // general initialization
   int rc = gnrl_init();
   if (rc == RC_ERR) {
@@ -456,38 +453,39 @@ list64* motif_structure(mfinder_input mfinderi){
 
   // initialize the random seed
   init_random_seed();
-  /*printf("initialized random seed\n");*/
 
+  // read in the network
   rc = read_network(&G_N,mfinderi);
-  if(rc==RC_ERR)
+  if(rc==RC_ERR){
     printf("load network failed\n");
+    return NULL;
+  }
 
+  // generate a fake network to search in
   Network *N;
   rc = duplicate_network(G_N,&N,"real_network");
   if (rc == RC_ERR) {
     printf("duplicate network failed\n");
     return NULL;
-  }/*else
-     printf("duplicate network succeeded\n");*/
+  }
 
-  //exhaustive search motif size n
+  // exhaustive search motif size n
   rc = count_subgraphs(N, GNRL_ST.mtf_sz, &RES_TBL.real, REAL_NET);
   if (rc == RC_ERR) {
     printf("real search failed\n");
     return NULL;
-  }/*else
-     printf("real search succeeded\n");*/
+  }
 
-  //calc result after isomorphism of ids
+  // calc result after isomorphism of ids
   join_subgraphs_res(&RES_TBL.real, GNRL_ST.mtf_sz, 0);
 
+  // conduct randomized network analysis
   if(GNRL_ST.rnd_net_num > 0){
     rc = process_rand_networks(&RES_TBL, GNRL_ST.mtf_sz);
     if (rc == RC_ERR) {
       printf("random network analysis failed\n");
       return NULL;
-    }/*else
-       printf("random network analysis succeeded\n");*/
+    }
   }
 
   //calculate final results
@@ -496,12 +494,132 @@ list64* motif_structure(mfinder_input mfinderi){
   // release memory of various objects
   free_network_mem(N);
   free(N);
-  //final_res_free(final_res);
-  //final_res_free(final_res_all);
 
   // return the crazy results table
+  // per mfinder, this depends on the size of the motifs
   if(GNRL_ST.mtf_sz<=4)
     return final_res_all;
   else
     return final_res;
+}
+
+
+/********************************************************
+ * function : motif_participation
+ *	Calculate the motif participation statistics
+ * arguments:
+ *   AAA
+ *   BBB
+ *   CCC
+ * return values:
+ *   XXX
+ *   YYY
+ *********************************************************/
+
+list64* motif_participation(mfinder_input mfinderi){
+  set_default_options();
+
+  // turn on quiet mode
+  GNRL_ST.quiet_mode=TRUE;
+
+  // what size motif are we talking about?
+  GNRL_ST.mtf_sz = mfinderi.MotifSize;
+
+  // ignore the uniqueness bit
+  GNRL_ST.unique_th=0;
+  GNRL_ST.calc_unique_flag=FALSE;
+
+  // ignore self edges
+  GNRL_ST.calc_self_edges=FALSE;
+
+  // keep track of motif members
+  GNRL_ST.list_members=TRUE;
+  GNRL_ST.max_members_list_sz=mfinderi.MaxMembersListSz;
+
+  // general initialization
+  int rc = gnrl_init();
+  if (rc == RC_ERR) {
+    printf("general init failed\n");
+    return NULL;
+  }
+
+  // initialize the random seed
+  init_random_seed();
+
+  // read in the network
+  rc = read_network(&G_N,mfinderi);
+  if(rc==RC_ERR){
+    printf("load network failed\n");
+    return NULL;
+  }
+
+  // generate a fake real network or randomize the network before counting motifs and participation
+  Network *N;
+  // use the fake real network
+  if (mfinderi.Randomize == 0){;
+    rc = duplicate_network(G_N,&N,"real_network");
+    if (rc == RC_ERR) {
+      printf("duplicate network failed\n");
+      return NULL;
+    }
+  }
+  // randomize the network
+  else{
+    // metropolis algorithm to have same triad consensus
+    if(mfinderi.UseMetropolis == 0){ // || GNRL_ST.mtf_sz <= 3){
+      //printf("randomizing in typical single-double fashion\n");
+      double switch_ratio;
+      rc = gen_rand_network_switches_method_conserve_double_edges(&N,&switch_ratio);
+      if (rc == RC_ERR) {
+	printf("single-double randomize network failed\n");
+	return NULL;
+      }
+      rc = update_network(N,G_N);
+      if (rc == RC_ERR) {
+	printf("randomize network failed to maintain node statistics\n");
+	return NULL;
+      }
+    }
+    // typical single/double switching algorithm
+    else{
+      //printf("randomize while using the metropolis algorithm to preserve triads\n");
+      int j,real_vec13[14];
+      Res_tbl met_res_tbl;
+
+      for(j=1;j<=13;j++)
+	real_vec13[j]=0;
+      init_res_tbl(&met_res_tbl);
+
+      met_motifs_search_real(G_N,&met_res_tbl,real_vec13);
+      list64_free_mem(met_res_tbl.real);
+
+      rc = gen_rand_network_metrop(&N,real_vec13);
+      if (rc == RC_ERR) {
+	printf("metropolis randomize network failed\n");
+	return NULL;
+      }
+      rc = update_network(N,G_N);
+      if (rc == RC_ERR) {
+	printf("randomize network failed to maintain node statistics\n");
+	return NULL;
+      }
+    }
+  }
+
+  //exhaustive search motif size n
+  rc = count_subgraphs(N, GNRL_ST.mtf_sz, &RES_TBL.real, REAL_NET);
+  if (rc == RC_ERR) {
+    printf("real search failed\n");
+    return NULL;
+  }
+
+  // release memory of various objects
+  free_network_mem(N);
+  free(N);
+
+  //calc result after isomorphism of ids
+  join_subgraphs_res(&RES_TBL.real, GNRL_ST.mtf_sz, 0);
+
+  return RES_TBL.real;
+
 }

@@ -11,25 +11,41 @@
 #include "results.h"
 #include "stouffer.h"
   extern list64* motif_structure(mfinder_input mfinderi);
+  extern list64* motif_participation(mfinder_input mfinderi);
 %}
 
 /******************************* Externs ********************************/
 
 extern list64* motif_structure(mfinder_input mfinderi);
+extern list64* motif_participation(mfinder_input mfinderi);
 
-/******************************* Typedefs *******************************/
+/************************ Stouffer Typedefs *******************************/
 
 typedef struct {
   char* Filename;
-
   int* Edges;
   unsigned int NumEdges;
-
   unsigned int MotifSize;
   int NRandomizations;
+  int MaxMembersListSz;
+  int Randomize;
+  int UseMetropolis;
 } mfinder_input;
 
+/******************************* Typedefs *******************************/
+
 typedef long long int64;
+
+typedef struct _list_item{
+	int val;
+	void *p;
+	struct _list_item *next;
+} list_item;
+
+typedef struct{
+	int size;
+	list_item *l;
+} list;
 
 typedef struct _list64_item{
 	int64 val;
@@ -65,24 +81,44 @@ typedef struct {
 	int dangling;
 } Motif_res;
 
+//Member info structure
+typedef struct {
+	int node;
+	unsigned char role;
+} Member;
+
+//Motif info (Subgraph info) structure
+typedef struct {
+	int64 id;
+	double count;
+	double prob_count;
+	double conc;
+	int hits;
+	list *members;
+	list *all_members;
+	int numberOfSelfEdges;
+	double conv_grade;
+} Motif;
+
 /******************************* Functions *******************************/
 
 %inline %{
-    void motif_members(void* motif,
-		       int* values,
-		       int mtf_sz){
-      unsigned i;
-      Member* members = (Member*) motif;
+    Motif_res* get_motif_result(void* p){
+      return (Motif_res*) p;
+    }
+    
+    Motif* get_motif(void* p){
+      return (Motif*) p;
+    }
+
+    void get_motif_members(void* p,
+			   int* vals,
+			   int mtf_sz){
+      unsigned int i;
+      Member* members = (Member*) p;
       for(i=0;i<mtf_sz;++i){
-	values[i] = members[i].node;
+	vals[i] = members[i].node;
       }
     }
 
-    Motif* get_motif(void* motif){
-      return (Motif*) motif;
-    }
-
-    Motif_res* get_motif_res(void* motif_res){
-      return (Motif_res*) motif_res;
-    }
 %}
