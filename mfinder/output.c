@@ -76,7 +76,7 @@ dump_network(FILE *fp,Network *N)
 			fprintf(fp,"%d %d\t", N->e_arr[i].s, N->e_arr[i].t);
 		fprintf(fp,"\n");
 	}
-	if(N->e_arr_dbl>0) {
+	if(N->e_dbl_num>0) {
 		for(i=1;i<=N->e_dbl_num;i++)
 			fprintf(fp,"%d %d\t", N->e_arr_dbl[i].s, N->e_arr_dbl[i].t);
 		fprintf(fp,"\n");
