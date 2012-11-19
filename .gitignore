@@ -15,3 +15,6 @@ Thumbs.db
 *~
 *.swp
 
+# Compiled source #
+###################
+*.pyc
