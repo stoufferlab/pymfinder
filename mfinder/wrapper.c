@@ -573,7 +573,7 @@ list64* motif_structure(mfinder_input mfinderi){
   GNRL_ST.calc_self_edges=FALSE;
 
   // randomize with the metropolis algorithm to preserve the same triad consensus
-  if(mfinderi.UseMetropolis == 0)
+  if(mfinderi.UseMetropolis == 1)
     GNRL_ST.use_metropolis=TRUE;
 
   // general initialization
