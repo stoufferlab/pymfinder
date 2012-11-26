@@ -113,7 +113,6 @@ load_network_from_array(Network **N_p, int* edges, int edges_num)
     t = edges[i*3+1];
     if (s==t){
       N->e_self_num += 1;
-      fprintf(stderr,"self: %i %i, %i\n",s,t,N->e_self_num);
       if (GNRL_ST.calc_self_edges == TRUE)
 	N->edges_num += 1;
     }else
