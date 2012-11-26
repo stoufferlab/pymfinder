@@ -24,13 +24,14 @@ extern Gnrl_st GNRL_ST;
 // confusing as hell result table
 extern Res_tbl RES_TBL;
 
+// a somewhat pared-down version of the results
+extern list64 *final_res, *final_res_all;
+
 // from the globals in main.c
 extern int DEBUG_LEVEL;
 
-// need the bloody network as an extern, I guess
+// we need the network as an extern
 extern Network *G_N;
-
-extern list64 *final_res, *final_res_all;
 
 /************************************************************************/
 
@@ -100,21 +101,28 @@ load_network_from_array(Network **N_p, int* edges, int edges_num)
   Network *N;
   int e_idx;
   int self_edge_exists=FALSE;
-  int self_edge_number=0;
   int matVal = 0;
 
   N=(Network*)calloc(1,sizeof(Network));
   N->name="I came from an array, sucka!";
   N->edges_num = 0;
+  N->e_self_num = 0;
 
   for(i=0;i<edges_num;i++){
     s = edges[i*3];
     t = edges[i*3+1];
-    if (s!=t || GNRL_ST.calc_self_edges == TRUE)
+    if (s==t){
+      N->e_self_num += 1;
+      fprintf(stderr,"self: %i %i, %i\n",s,t,N->e_self_num);
+      if (GNRL_ST.calc_self_edges == TRUE)
+	N->edges_num += 1;
+    }else
       N->edges_num += 1;
   }
 
   N->e_arr=(Edge*)calloc(N->edges_num+1,sizeof(Edge));
+  N->e_arr_self=(Edge*)calloc(N->e_self_num+1,sizeof(Edge));
+  j = N->e_self_num;
   for(i=N->edges_num;i>0;i--){
     //SRC->TRG format
     if(GNRL_ST.input_net_format==SRC_TRG_FORMAT){
@@ -129,7 +137,21 @@ load_network_from_array(Network **N_p, int* edges, int edges_num)
       weight = edges[(i-1)*3+2];
     }
 
-    if (s!=t || GNRL_ST.calc_self_edges == TRUE){
+    if (s==t){
+      N->e_arr_self[j].s=s;
+      N->e_arr_self[j].t=t;
+      N->e_arr_self[j].weight=weight;
+      j--;
+      
+      if(GNRL_ST.calc_self_edges == TRUE){
+	N->e_arr[i].s=s;
+	N->e_arr[i].t=t;
+	N->e_arr[i].weight=weight;
+
+	if (s>max_node) max_node=s;
+	if (t>max_node) max_node=t;
+      }
+    }else{
       N->e_arr[i].s=s;
       N->e_arr[i].t=t;
       N->e_arr[i].weight=weight;
@@ -137,11 +159,6 @@ load_network_from_array(Network **N_p, int* edges, int edges_num)
       if (s>max_node) max_node=s;
       if (t>max_node) max_node=t;
     }
-
-    if(s == t)
-      {
-	self_edge_number++;
-      }
   }    
 
   ///////////////////////////////////////////////////////////////////
@@ -170,6 +187,7 @@ load_network_from_array(Network **N_p, int* edges, int edges_num)
       }
     }
   }
+
   //if efc_prob app then
   //create e_map matrix mapping of edges [s,t] to their index in e_arr
   if(GNRL_ST.efc_prob){
@@ -182,8 +200,8 @@ load_network_from_array(Network **N_p, int* edges, int edges_num)
 
       MatAsgn(N->e_map,N->e_arr[i].s,N->e_arr[i].t,i);
   }
-  //check there are no Self edges- if there are any then output them to screen and  stop
 
+  //check there are no Self edges- if there are any then output them to screen and  stop
   if(GNRL_ST.calc_self_edges == FALSE){
     for(i=1; i<=N->vertices_num; i++) {
       if(MatGet(N->mat,i,i)==1) {
@@ -195,7 +213,6 @@ load_network_from_array(Network **N_p, int* edges, int edges_num)
     if(self_edge_exists==TRUE)
       at_exit(-1);
   }
-
 
   //allocate and fill arrays of single edges and double edges
   N->e_arr_sin=(Edge*)calloc(N->edges_num+1,sizeof(Edge));
@@ -413,6 +430,118 @@ read_network(Network **N_p, mfinder_input mfinderi)
 }
 
 /********************************************************
+ * function : random_network
+ *	Randomize an input network
+ * arguments:
+ *   AAA
+ *   BBB
+ *   CCC
+ * return values:
+ *   XXX
+ *   YYY
+ *********************************************************/
+
+list* random_network(mfinder_input mfinderi){
+  set_default_options();
+
+  // turn on quiet mode
+  GNRL_ST.quiet_mode=TRUE;
+
+  // ignore self edges
+  GNRL_ST.calc_self_edges=FALSE;
+
+  // general initialization
+  int rc = gnrl_init();
+  if (rc == RC_ERR) {
+    printf("general init failed\n");
+    return NULL;
+  }
+
+  // initialize the random seed
+  init_random_seed();
+
+  // read in the network
+  rc = read_network(&G_N,mfinderi);
+  if(rc==RC_ERR){
+    fprintf(stderr,"load network failed\n");
+    return NULL;
+  }
+
+  // generate a new (to be randomized) network
+  Network *N;
+
+  // typical single/double switching algorithm
+  if(mfinderi.UseMetropolis == 0){ // || GNRL_ST.mtf_sz <= 3){
+    //fprintf(stderr,"randomizing in typical single-double fashion\n");
+    double switch_ratio;
+    rc = gen_rand_network_switches_method_conserve_double_edges(&N,&switch_ratio);
+    if (rc == RC_ERR) {
+      fprintf(stderr,"single-double randomize network failed\n");
+      return NULL;
+    }
+    rc = update_network(N,G_N);
+    if (rc == RC_ERR) {
+      fprintf(stderr,"randomize network failed to maintain node statistics\n");
+      return NULL;
+    }
+  }
+  // metropolis algorithm to have same triad consensus
+  else{
+    //printf("randomize while using the metropolis algorithm to preserve triads\n");
+    int j,real_vec13[14];
+    Res_tbl met_res_tbl;
+
+    for(j=1;j<=13;j++)
+      real_vec13[j]=0;
+    init_res_tbl(&met_res_tbl);
+
+    met_motifs_search_real(G_N,&met_res_tbl,real_vec13);
+    list64_free_mem(met_res_tbl.real);
+
+    rc = gen_rand_network_metrop(&N,real_vec13);
+    if (rc == RC_ERR) {
+      fprintf(stderr,"metropolis randomize network failed\n");
+      return NULL;
+    }
+    rc = update_network(N,G_N);
+    if (rc == RC_ERR) {
+      fprintf(stderr,"randomize network failed to maintain node statistics\n");
+      return NULL;
+    }
+  }
+
+  list *randomized_edges;
+  list_init(&randomized_edges);
+  
+  int i;
+  Edge *e;
+  // add the self edges that were never randomized
+  for(i=1;i<=N->e_self_num;++i){
+    e=(Edge*)calloc(1,sizeof(Edge));
+    e->s = N->e_arr_self[i].s;
+    e->t = N->e_arr_self[i].t;
+    e->weight = N->e_arr_self[i].weight;
+
+    list_insert(randomized_edges,0,(void*)e);
+  }
+  // add the now randomized edges
+  for(i=1;i<=N->edges_num;++i){
+    e=(Edge*)calloc(1,sizeof(Edge));
+    e->s = N->e_arr[i].s;
+    e->t = N->e_arr[i].t;
+    e->weight = N->e_arr[i].weight;
+
+    list_insert(randomized_edges,0,(void*)e);
+  }
+
+  // release memory of various objects
+  free_network_mem(N);
+  free(N);
+
+  return randomized_edges;
+}
+
+/********************************************************
  * function : motif_structure
  *	Calculate the motif structure statistics
  * arguments:
@@ -442,6 +571,10 @@ list64* motif_structure(mfinder_input mfinderi){
 
   // ignore self edges
   GNRL_ST.calc_self_edges=FALSE;
+
+  // randomize with the metropolis algorithm to preserve the same triad consensus
+  if(mfinderi.UseMetropolis == 0)
+    GNRL_ST.use_metropolis=TRUE;
 
   // general initialization
   int rc = gnrl_init();
@@ -497,10 +630,13 @@ list64* motif_structure(mfinder_input mfinderi){
 
   // return the crazy results table
   // per mfinder, this depends on the size of the motifs
-  if(GNRL_ST.mtf_sz<=4)
+  if(GNRL_ST.mtf_sz<=4){
+    final_res_free(final_res);
     return final_res_all;
-  else
+  }else{
+    final_res_free(final_res_all);
     return final_res;
+  }
 }
 
 
@@ -565,7 +701,7 @@ list64* motif_participation(mfinder_input mfinderi){
   }
   // randomize the network
   else{
-    // metropolis algorithm to have same triad consensus
+    // typical single/double switching algorithm
     if(mfinderi.UseMetropolis == 0){ // || GNRL_ST.mtf_sz <= 3){
       //printf("randomizing in typical single-double fashion\n");
       double switch_ratio;
@@ -580,7 +716,7 @@ list64* motif_participation(mfinder_input mfinderi){
 	return NULL;
       }
     }
-    // typical single/double switching algorithm
+    // metropolis algorithm to have same triad consensus
     else{
       //printf("randomize while using the metropolis algorithm to preserve triads\n");
       int j,real_vec13[14];
@@ -606,6 +742,12 @@ list64* motif_participation(mfinder_input mfinderi){
     }
   }
 
+  //FILE *fp;
+  //fp = fopen("fargus.net","w");
+  //dump_network(stdout,N);
+  //return NULL;
+  //fclose(fp);
+
   //exhaustive search motif size n
   rc = count_subgraphs(N, GNRL_ST.mtf_sz, &RES_TBL.real, REAL_NET);
   if (rc == RC_ERR) {
@@ -621,5 +763,4 @@ list64* motif_participation(mfinder_input mfinderi){
   join_subgraphs_res(&RES_TBL.real, GNRL_ST.mtf_sz, 0);
 
   return RES_TBL.real;
-
 }

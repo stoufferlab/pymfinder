@@ -98,6 +98,8 @@ typedef struct {
 	Edge *e_arr_sin;  //single edges array
 	int e_dbl_num;    //double edges num
 	Edge *e_arr_dbl;  //double edges array
+	int e_self_num;   //self edges num
+	Edge *e_arr_self; //self edges array
 	int *indeg;  //in degree array (index i related node i)
 	int *outdeg; //out degree array (index i related node i)
 	int *doubledeg; //double edges degree array (index i related node i)

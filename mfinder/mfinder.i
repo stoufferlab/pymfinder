@@ -10,12 +10,14 @@
 #include "common.h"
 #include "results.h"
 #include "stouffer.h"
+  extern list* random_network(mfinder_input mfinderi);
   extern list64* motif_structure(mfinder_input mfinderi);
   extern list64* motif_participation(mfinder_input mfinderi);
 %}
 
 /******************************* Externs ********************************/
 
+extern list* random_network(mfinder_input mfinderi);
 extern list64* motif_structure(mfinder_input mfinderi);
 extern list64* motif_participation(mfinder_input mfinderi);
 
@@ -100,9 +102,20 @@ typedef struct {
 	double conv_grade;
 } Motif;
 
+// Edge structure
+typedef struct {
+	int s;
+	int t;
+	int weight;
+} Edge;
+
 /******************************* Functions *******************************/
 
 %inline %{
+    Edge* get_edge(void* p){
+      return (Edge*) p;
+    }
+
     Motif_res* get_motif_result(void* p){
       return (Motif_res*) p;
     }

@@ -13,7 +13,7 @@ SWIG=swig
 #
 SWIGFLAGS=-python
 
-MF_FILES=clustering grassberger hash list mat metropolis motif_ids \
+MF_FILES=clustering globals grassberger hash list mat metropolis motif_ids \
          output permutation prob random results role stubs switches
 SWIG_FILES=mfinder wrapper
 

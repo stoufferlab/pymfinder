@@ -33,23 +33,32 @@ typedef struct {
 
   // for the participation code:
   // how many "motif members" can we keep track of?
-  // to randomize the network beforehand
-  // and to adjust the type of randomization
+  // should we randomize the network beforehand?
   int MaxMembersListSz;
   int Randomize;
+
+  // should we use the metropolis-hastings algorithm to preserve size-three motifs?
   int UseMetropolis;
 } mfinder_input;
 
 /******************************* Functions *******************************/
 
+// modified from original mfinder code
+void
+free_network_mem(Network *N);
+int
+load_network(Network **N_p, char* network_fname);
+int
+duplicate_network(Network *SRC, Network **TRG_p, char *trg_name);
+
+// added to work interface with swig and python
 void set_default_options();
-
 int load_network_from_array(Network **N_p, int* edges, int edges_num);
-
 int read_network(Network **N_p, mfinder_input mfinderi);
+int randomize_network(Network **N_p, mfinder_input mfinderi);
 
+list* random_network(mfinder_input mfinderi);
 list64* motif_structure(mfinder_input mfinderi);
-
 list64* motif_participation(mfinder_input mfinderi);
 
 #endif
