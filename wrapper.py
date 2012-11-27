@@ -10,8 +10,6 @@ import sys
 ##############################################################
 
 def gen_mfinder_network(links):
-    links = [i for i in links if i[0] != i[1]]
-
     node_dict = {}
     edges = mfinder.intArray(len(links)*3)
     for i in range(len(links)):
@@ -20,17 +18,89 @@ def gen_mfinder_network(links):
         except ValueError:
             s,t = links[i]
             w = 1
-            
+
         if s not in node_dict:
             node_dict[s] = len(node_dict) + 1
         if t not in node_dict:
             node_dict[t] = len(node_dict) + 1
 
-        edges[3*i+0] = s #node_dict[s]
-        edges[3*i+1] = t #node_dict[t]
+        edges[3*i+0] = s
+        edges[3*i+1] = t
         edges[3*i+2] = w
 
     return edges, len(links), node_dict
+
+##############################################################
+##############################################################
+# RANDOM NETWORK CODE
+##############################################################
+##############################################################
+
+def random_network(network,
+                   usemetropolis = False,
+                   ):
+
+    # initialize the heinous input struct
+    web = mfinder.mfinder_input()
+
+    # populate the network info
+    if type(network) == type("hello world"):
+        web.Filename = network
+    elif type(network) == type([1,2,3]):
+        web.Edges, web.NumEdges, node_dict = gen_mfinder_network(network)
+    else:
+        sys.stderr.write("Uncle Sam frowns upon tax cheats.\n")
+        sys.exit()
+
+    # parameterize the analysis
+    if not usemetropolis:
+        web.UseMetropolis = 0
+    else:
+        web.UseMetropolis = 1
+
+    return randomized_network(web)
+        
+def randomized_network(mfinderi):
+    results = mfinder.random_network(mfinderi)
+    
+    edges = []
+    edge_result = results.l
+    while (edge_result != None):
+        edge = mfinder.get_edge(edge_result.p)
+        s = int(edge.s)
+        t = int(edge.t)
+        w = int(edge.weight)
+        edges.append((s,t,w))
+
+        edge_result = edge_result.next
+
+    return edges
+
+def print_random_network(edges,outFile=None,sep=" ",header=False):
+    if outFile:
+        fstream = open(outFile,'w')
+    else:
+        fstream = sys.stderr        
+
+    if header:
+        output = sep.join(['target',
+                           'source',
+                           'weight',])
+
+        fstream.write(output + '\n')
+
+    for trg,src,w in sorted(edges):
+        output = sep.join(["%i" % trg,
+                           "%i" % src,
+                           "%i" % w,
+                           ])
+
+        fstream.write(output + '\n')
+
+    if outFile:
+        fstream.close()
+
+    return
 
 ##############################################################
 ##############################################################
@@ -87,13 +157,19 @@ def motif_stats(mfinderi):
 
     return motif_stats
 
-def print_motif_structure(motif_stats,sep=" ",header=False):
+def print_motif_structure(motif_stats,outFile=None,sep=" ",header=False):
+    if outFile:
+        fstream = open(outFile,'w')
+    else:
+        fstream = sys.stderr
+
     if header:
-        print sep.join(['motif',
-                        'real',
-                        'rand',
-                        'srand',
-                        'zscore',])
+        output = sep.join(['motif',
+                           'real',
+                           'rand',
+                           'srand',
+                           'zscore',])
+        fstream.write(output + '\n')
 
     for m in sorted(motif_stats.keys()):
         output = sep.join(["%i" % m,
@@ -102,18 +178,11 @@ def print_motif_structure(motif_stats,sep=" ",header=False):
                            "%.3f" % motif_stats[m]['srand'],
                            "%.3f" % motif_stats[m]['zscore'],
                            ])
-        print output
-        #print("%i%s%i%s%.2f%s%.2f%s%.3f" % (m,
-        #                                    sep,
-        #                                    motif_stats[m]['real'],
-        #                                    sep,
-        #                                    motif_stats[m]['rand'],
-        #                                    sep,
-        #                                    motif_stats[m]['srand'],
-        #                                    sep,
-        #                                    motif_stats[m]['zscore'],
-        #                                    sep
-        #                                    ))
+        fstream.write(output + '\n')
+
+    if outFile:
+        fstream.close()
+
     return
 
 ##############################################################
@@ -233,12 +302,22 @@ def motif_participation(network,
     except UnboundLocalError:
         return p_stats
 
-def print_participation(participation_stats,sep=" ",header=False):
+def print_participation(participation_stats,outFile=None,sep=" ",header=False):
+    if outFile:
+        fstream = open(outFile,'w')
+    else:
+        fstream = sys.stderr
+
     if header:
-        print sep.join(["node"]+list(map(str,sorted(participation_stats[participation_stats.keys()[0]].keys()))))
+        output = sep.join(["node"]+list(map(str,sorted(participation_stats[participation_stats.keys()[0]].keys()))))
+        fstream.write(output + '\n')
 
     for n in sorted(participation_stats.keys()):
-        print sep.join([str(n)] + list(map(str,[j for i,j in sorted(participation_stats[n].items())])))
+        output = sep.join([str(n)] + list(map(str,[j for i,j in sorted(participation_stats[n].items())])))
+        fstream.write(output + '\n')
+
+    if outFile:
+        fstream.close()
 
     return
 
