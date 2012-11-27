@@ -33,6 +33,7 @@ if structure:
                          motifsize = 3,
                          nrandomizations = 25,
                          usemetropolis = False,
+                         stoufferIDs = False,
                          )
 
     # print out the results
@@ -48,6 +49,7 @@ if participation:
                              motifsize = 3,
                              randomize = False,
                              usemetropolis = False,
+                             stoufferIDs = False,
                              )
 
     # print out the results

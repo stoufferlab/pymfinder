@@ -5,6 +5,27 @@ import sys
 
 ##############################################################
 ##############################################################
+# USEFUL GLOBAL VARIABLES
+##############################################################
+##############################################################
+
+STOUFFER_MOTIF_IDS = {12:  'S1',
+                      38:  'S2',
+                      98:  'S3',
+                      36:  'S4',
+                      6:   'S5',
+                      46:  'D1',
+                      108: 'D2',
+                      14:  'D3',
+                      74:  'D4',
+                      102: 'D5',
+                      238: 'D6',
+                      110: 'D7',
+                      78:  'D8',
+                      }
+
+##############################################################
+##############################################################
 # GENERAL UTILITIES
 ##############################################################
 ##############################################################
@@ -112,6 +133,7 @@ def motif_structure(network,
                     motifsize = 3,
                     nrandomizations = 0,
                     usemetropolis = False,
+                    stoufferIDs = None,
                     ):
 
     # initialize the heinous input struct
@@ -134,15 +156,16 @@ def motif_structure(network,
     else:
         web.UseMetropolis = 1
 
-    return motif_stats(web)
+    return motif_stats(web,stoufferIDs)
         
-def motif_stats(mfinderi):
+def motif_stats(mfinderi,stoufferIDs):
     results = mfinder.motif_structure(mfinderi)
 
     motif_stats = {}
     motif_result = results.l
     while (motif_result != None):
         motif = mfinder.get_motif_result(motif_result.p)
+
         motif_id = int(motif.id)
         if motif_id in motif_stats:
             sys.stderr.write("A motif has appeared twice. How odd.\n")
@@ -154,6 +177,11 @@ def motif_stats(mfinderi):
             motif_stats[motif_id]['zscore'] = float(motif.real_zscore)
 
         motif_result = motif_result.next
+
+    if stoufferIDs and mfinderi.MotifSize == 3:
+        return dict([(STOUFFER_MOTIF_IDS[id],motif_stats[id]) for id in motif_stats])
+    else:
+        return motif_stats
 
     return motif_stats
 
@@ -172,7 +200,7 @@ def print_motif_structure(motif_stats,outFile=None,sep=" ",header=False):
         fstream.write(output + '\n')
 
     for m in sorted(motif_stats.keys()):
-        output = sep.join(["%i" % m,
+        output = sep.join(["%s" % str(m),
                            "%i" % motif_stats[m]['real'],
                            "%.3f" % motif_stats[m]['rand'],
                            "%.3f" % motif_stats[m]['srand'],
@@ -191,7 +219,7 @@ def print_motif_structure(motif_stats,outFile=None,sep=" ",header=False):
 ##############################################################
 ##############################################################
 
-def participation_stats(mfinderi):
+def participation_stats(mfinderi,stoufferIDs):
     results = mfinder.motif_participation(mfinderi)
 
     maxed_out_member_list = False
@@ -245,7 +273,7 @@ def participation_stats(mfinderi):
     r_l = results.l
     while (r_l != None):
         motif = mfinder.get_motif(r_l.p)
-        id = motif.id
+        id = int(motif.id)
 
         for n in participation:
             try:
@@ -255,7 +283,12 @@ def participation_stats(mfinderi):
 
         r_l = r_l.next
 
-    return participation    
+    if stoufferIDs and mfinderi.MotifSize == 3:
+        for n in participation:
+            participation[n] = dict([(STOUFFER_MOTIF_IDS[id],participation[n][id]) for id in participation[n]])
+        return participation
+    else:
+        return participation    
 
 def decode_participation(participation_stats,node_dictionary):
     reverse_dictionary = dict([(j,i) for i,j in node_dictionary.items()])
@@ -266,6 +299,7 @@ def motif_participation(network,
                         maxmemberslistsz = 1000,
                         randomize = False,
                         usemetropolis = False,
+                        stoufferIDs = False,
                         ):
 
     # initialize the heinous input struct
@@ -295,7 +329,7 @@ def motif_participation(network,
         else:
             web.UseMetropolis = 1
         
-    p_stats = participation_stats(web)
+    p_stats = participation_stats(web,stoufferIDs)
 
     try:
         return decode_participation(p_stats,node_dict)
