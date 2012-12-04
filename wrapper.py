@@ -30,26 +30,83 @@ STOUFFER_MOTIF_IDS = {12:  'S1',
 ##############################################################
 ##############################################################
 
-def gen_mfinder_network(links):
+def read_links(filename):
+    inFile = open(filename, 'r')
+    links = [i.strip().split() for i in inFile.readlines()]
+    inFile.close()
+
+    if links:
+        for i in range(len(links)):
+            if len(links[i]) > 3 or len(links[i]) < 2:
+                sys.stderr.write("There is something peculiar about one of the interactions in your input file.\n")
+                sys.exit() 
+            elif len(links[i]) == 2:
+                links[i] = links[i] + [1]
+
+    return [tuple(i) for i in links]
+
+# turn any type of node label into integers (mfinder is finicky like that)
+def relabel_nodes(links):
     node_dict = {}
-    edges = mfinder.intArray(len(links)*3)
     for i in range(len(links)):
         try:
             s,t,w = links[i]
+            w = int(w)
         except ValueError:
             s,t = links[i]
             w = 1
+
+        try:
+            s = int(s)
+        except:
+            pass
+
+        try:
+            t = int(t)
+        except:
+            pass
 
         if s not in node_dict:
             node_dict[s] = len(node_dict) + 1
         if t not in node_dict:
             node_dict[t] = len(node_dict) + 1
 
-        edges[3*i+0] = s
-        edges[3*i+1] = t
-        edges[3*i+2] = w
+        links[i] = (node_dict[s], node_dict[t], w)
 
-    return edges, len(links), node_dict
+    return links, node_dict
+    
+def gen_mfinder_network(links):
+    edges = mfinder.intArray(len(links)*3+1)
+    for i in range(len(links)):
+        try:
+            s,t,w = links[i]
+            w = int(w)
+        except ValueError:
+            s,t = links[i]
+            w = 1
+
+        edges[3*i+1] = s
+        edges[3*i+2] = t
+        edges[3*i+3] = w
+
+    return edges, len(links)
+
+# populate the network info
+def mfinder_network_setup(network):
+    if type(network) == type("hello world"):
+        # DEBUG: if we want to use a filename we need to run a check here to make sure that the node labels are integers and that there are weights
+        # web.Filename = network
+        network = read_links(network)
+        network, node_dict = relabel_nodes(network)
+        edges, numedges = gen_mfinder_network(network)
+        return edges, numedges, node_dict
+    elif type(network) == type([1,2,3]):
+        network, node_dict = relabel_nodes(network)
+        edges, numedges = gen_mfinder_network(network)
+        return edges, numedges, node_dict
+    else:
+        sys.stderr.write("Uncle Sam frowns upon tax cheats.\n")
+        sys.exit()
 
 ##############################################################
 ##############################################################
@@ -64,14 +121,8 @@ def random_network(network,
     # initialize the heinous input struct
     web = mfinder.mfinder_input()
 
-    # populate the network info
-    if type(network) == type("hello world"):
-        web.Filename = network
-    elif type(network) == type([1,2,3]):
-        web.Edges, web.NumEdges, node_dict = gen_mfinder_network(network)
-    else:
-        sys.stderr.write("Uncle Sam frowns upon tax cheats.\n")
-        sys.exit()
+    # setup the network info
+    web.Edges, web.NumEdges, node_dict = mfinder_network_setup(network)
 
     # parameterize the analysis
     if not usemetropolis:
@@ -101,7 +152,7 @@ def print_random_network(edges,outFile=None,sep=" ",header=False):
     if outFile:
         fstream = open(outFile,'w')
     else:
-        fstream = sys.stderr        
+        fstream = sys.stdout
 
     if header:
         output = sep.join(['target',
@@ -139,14 +190,8 @@ def motif_structure(network,
     # initialize the heinous input struct
     web = mfinder.mfinder_input()
 
-    # populate the network info
-    if type(network) == type("hello world"):
-        web.Filename = network
-    elif type(network) == type([1,2,3]):
-        web.Edges, web.NumEdges, node_dict = gen_mfinder_network(network)
-    else:
-        sys.stderr.write("Uncle Sam frowns upon tax cheats.\n")
-        sys.exit()
+    # setup the network info
+    web.Edges, web.NumEdges, node_dict = mfinder_network_setup(network)
 
     # parameterize the analysis
     web.MotifSize = motifsize
@@ -189,7 +234,7 @@ def print_motif_structure(motif_stats,outFile=None,sep=" ",header=False):
     if outFile:
         fstream = open(outFile,'w')
     else:
-        fstream = sys.stderr
+        fstream = sys.stdout
 
     if header:
         output = sep.join(['motif',
@@ -305,14 +350,8 @@ def motif_participation(network,
     # initialize the heinous input struct
     web = mfinder.mfinder_input()
 
-    # populate the network info
-    if type(network) == type("hello world"):
-        web.Filename = network
-    elif type(network) == type([1,2,3]):
-        web.Edges, web.NumEdges, node_dict = gen_mfinder_network(network)
-    else:
-        sys.stderr.write("Uncle Sam frowns upon tax cheats.\n")
-        sys.exit()
+    # setup the network info
+    web.Edges, web.NumEdges, node_dict = mfinder_network_setup(network)
 
     # parameterize the analysis
     web.MotifSize = motifsize
@@ -340,7 +379,7 @@ def print_participation(participation_stats,outFile=None,sep=" ",header=False):
     if outFile:
         fstream = open(outFile,'w')
     else:
-        fstream = sys.stderr
+        fstream = sys.stdout
 
     if header:
         output = sep.join(["node"]+list(map(str,sorted(participation_stats[participation_stats.keys()[0]].keys()))))

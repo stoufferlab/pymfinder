@@ -94,7 +94,7 @@ void set_default_options(){
 int
 load_network_from_array(Network **N_p, int* edges, int edges_num)
 {
-  int   rc=RC_OK,s,t,i,j,weight;
+  int   rc=RC_OK,s,t,i,j,k,weight;
   list_item *l_e;
   int max_node=0;
   //FILE *fp;
@@ -108,9 +108,9 @@ load_network_from_array(Network **N_p, int* edges, int edges_num)
   N->edges_num = 0;
   N->e_self_num = 0;
 
-  for(i=0;i<edges_num;i++){
-    s = edges[i*3];
-    t = edges[i*3+1];
+  for(i=1;i<=edges_num;i++){
+    s = edges[3*(i-1)+1];
+    t = edges[3*(i-1)+2];
     if (s==t){
       N->e_self_num += 1;
       if (GNRL_ST.calc_self_edges == TRUE)
@@ -121,39 +121,38 @@ load_network_from_array(Network **N_p, int* edges, int edges_num)
 
   N->e_arr=(Edge*)calloc(N->edges_num+1,sizeof(Edge));
   N->e_arr_self=(Edge*)calloc(N->e_self_num+1,sizeof(Edge));
-  j = N->e_self_num;
-  for(i=N->edges_num;i>0;i--){
+  j = k = 0;
+  for(i=1;i<=edges_num;i++){
     //SRC->TRG format
     if(GNRL_ST.input_net_format==SRC_TRG_FORMAT){
-      s = edges[(i-1)*3];
-      t = edges[(i-1)*3+1];
-      weight = edges[(i-1)*3+2];
+      s = edges[3*(i-1)+1];
+      t = edges[3*(i-1)+2];
+      weight = edges[3*(i-1)+3];
     }
     //TRG->SRC format
     else{
-      t = edges[(i-1)*3];
-      s = edges[(i-1)*3+1];
-      weight = edges[(i-1)*3+2];
+      t = edges[3*(i-1)+1];
+      s = edges[3*(i-1)+2];
+      weight = edges[3*(i-1)+3];
     }
 
     if (s==t){
-      N->e_arr_self[j].s=s;
+      N->e_arr_self[++j].s=s;
       N->e_arr_self[j].t=t;
       N->e_arr_self[j].weight=weight;
-      j--;
       
       if(GNRL_ST.calc_self_edges == TRUE){
-	N->e_arr[i].s=s;
-	N->e_arr[i].t=t;
-	N->e_arr[i].weight=weight;
+	N->e_arr[++k].s=s;
+	N->e_arr[k].t=t;
+	N->e_arr[k].weight=weight;
 
 	if (s>max_node) max_node=s;
 	if (t>max_node) max_node=t;
       }
     }else{
-      N->e_arr[i].s=s;
-      N->e_arr[i].t=t;
-      N->e_arr[i].weight=weight;
+      N->e_arr[++k].s=s;
+      N->e_arr[k].t=t;
+      N->e_arr[k].weight=weight;
 
       if (s>max_node) max_node=s;
       if (t>max_node) max_node=t;
