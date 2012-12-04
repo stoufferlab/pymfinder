@@ -19,19 +19,14 @@ WRAPPER_FILES=wrapper
 SWIG_FILES=mfinder
 
 MF_OBJECTS=$(MF_FILES:=.o)
-SWIG_C=$(SWIG_FILES:=.c) 
 SWIG_OBJECTS=$(SWIG_FILES:=.o) $(WRAPPER_FILES:=.o)
 
-EXECUTABLES=mfinder
 LIBRARIES=_mfinder.so
 
-all: $(EXECUTABLES) $(LIBRARIES)
+all: $(LIBRARIES)
 
 _mfinder.so: $(MF_OBJECTS) $(SWIG_OBJECTS)
 	$(LD) $(LDFLAGS) -o _mfinder.so $(MF_OBJECTS) $(SWIG_OBJECTS)
-
-$(EXECUTABLES): $(MF_OBJECTS) main.o
-	$(CC) $(MF_OBJECTS) main.o -o $(EXECUTABLES) $(LDFLAGS)
 
 # clear out all suffixes
 .SUFFIXES:
@@ -45,4 +40,4 @@ $(EXECUTABLES): $(MF_OBJECTS) main.o
 	$(SWIG) $(SWIGFLAGS) -o $@ $<
 
 clean:
-	rm -rf main.o mfinder.py $(MF_OBJECTS) $(SWIG_OBJECTS) $(SWIG_C) $(EXECUTABLES) $(LIBRARIES)
+	rm -rf mfinder.py $(MF_OBJECTS) $(SWIG_OBJECTS) $(LIBRARIES)
