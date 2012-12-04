@@ -15,10 +15,12 @@ SWIGFLAGS=-python
 
 MF_FILES=clustering globals grassberger hash list mat metropolis motif_ids \
          output permutation prob random results role stubs switches
-SWIG_FILES=mfinder wrapper
+WRAPPER_FILES=wrapper
+SWIG_FILES=mfinder
 
 MF_OBJECTS=$(MF_FILES:=.o)
-SWIG_OBJECTS=$(SWIG_FILES:=.o) 
+SWIG_C=$(SWIG_FILES:=.c) 
+SWIG_OBJECTS=$(SWIG_FILES:=.o) $(WRAPPER_FILES:=.o)
 
 EXECUTABLES=mfinder
 LIBRARIES=_mfinder.so
@@ -43,4 +45,4 @@ $(EXECUTABLES): $(MF_OBJECTS) main.o
 	$(SWIG) $(SWIGFLAGS) -o $@ $<
 
 clean:
-	rm -rf main.o mfinder.py $(MF_OBJECTS) $(SWIG_OBJECTS) $(EXECUTABLES) $(LIBRARIES)
+	rm -rf main.o mfinder.py $(MF_OBJECTS) $(SWIG_OBJECTS) $(SWIG_C) $(EXECUTABLES) $(LIBRARIES)
