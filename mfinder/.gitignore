@@ -1,4 +1,4 @@
 # Compiled source #
 ###################
 *.o
-mfinder
+mfinder.py
