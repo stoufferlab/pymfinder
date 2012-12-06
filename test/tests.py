@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from wrapper import *
+from mfinder import *
 
 ##############################################################
 ##############################################################
@@ -8,7 +8,8 @@ from wrapper import *
 ##############################################################
 ##############################################################
 
-filename = "test.net"
+import os
+filename = os.path.dirname(__file__) + "/test.net"
 
 randomize = True
 structure = True
@@ -31,7 +32,7 @@ if randomize:
 if structure:
     mm = motif_structure(filename,
                          motifsize = 3,
-                         nrandomizations = 25,
+                         nrandomizations = 250,
                          usemetropolis = False,
                          stoufferIDs = False,
                          )
