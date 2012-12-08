@@ -1,4 +1,3 @@
-
 from distutils.core import setup, Extension
 
 mfinder_module = Extension('_mfinder',
@@ -30,25 +29,25 @@ mfinder_module = Extension('_mfinder',
 
 
 setup(
-    name = "mfinder",
+    name = "pymfinder",
     version = "0.23",
     description = "Python wrapper for mfinder 1.2",
     author = "Daniel B. Stouffer",
     author_email = "daniel@stoufferlab.org",
-    url = 'http://github.com/stoufferlab/motif-roles',
-    packages = ['mfinder',
-                'mfinder.mfinder',
-                'mfinder.test',
-                #'mfinder.data',                
+    url = 'http://github.com/stoufferlab/pymfinder',
+    packages = ['pymfinder',
+                'pymfinder.mfinder',
+                'pymfinder.test',
+                #'pymfinder.data',                
                 ],
-    package_dir = {'mfinder' : '',
-                   'mfinder.mfinder' : 'mfinder',
-                   'mfinder.test' : 'test',
-                   #'mfinder.data' : 'data',
+    package_dir = {'pymfinder' : '',
+                   'pymfinder.mfinder' : 'mfinder',
+                   'pymfinder.test' : 'test',
+                   #'pymfinder.data' : 'data',
                    },
-    package_data = {'mfinder.test' : ['test.net',]
+    package_data = {'pymfinder.test' : ['test.net',]
                     },
-    ext_package = 'mfinder.mfinder',
+    ext_package = 'pymfinder.mfinder',
     ext_modules = [mfinder_module,]
 
 )
