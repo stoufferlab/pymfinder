@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from mfinder import *
+from pymfinder import *
 
 ##############################################################
 ##############################################################
@@ -9,7 +9,7 @@ from mfinder import *
 ##############################################################
 
 import os
-filename = os.path.dirname(__file__) + "/test.net"
+filename = os.path.dirname(__file__) + "/../data/test.net"
 
 randomize = True
 structure = True
