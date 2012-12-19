@@ -9,7 +9,7 @@
 %{
 #include "common.h"
 #include "results.h"
-#include "stouffer.h"
+#include "wrapper.h"
   extern list* random_network(mfinder_input mfinderi);
   extern list64* motif_structure(mfinder_input mfinderi);
   extern list64* motif_participation(mfinder_input mfinderi);
