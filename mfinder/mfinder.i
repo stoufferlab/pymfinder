@@ -8,8 +8,9 @@
 %module mfinder
 %{
 #include "common.h"
-#include "results.h"
 #include "wrapper.h"
+  extern list64* list_motifs(int mtf_sz);
+  extern list* motif_edges(int64 id, int mtf_sz);
   extern list* random_network(mfinder_input mfinderi);
   extern list64* motif_structure(mfinder_input mfinderi);
   extern list64* motif_participation(mfinder_input mfinderi);
@@ -17,6 +18,8 @@
 
 /******************************* Externs ********************************/
 
+extern list64* list_motifs(int mtf_sz);
+extern list* motif_edges(int64 id, int mtf_sz);
 extern list* random_network(mfinder_input mfinderi);
 extern list64* motif_structure(mfinder_input mfinderi);
 extern list64* motif_participation(mfinder_input mfinderi);

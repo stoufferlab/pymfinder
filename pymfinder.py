@@ -110,6 +110,56 @@ def mfinder_network_setup(network):
 
 ##############################################################
 ##############################################################
+# MOTIF GENERATING CODE
+##############################################################
+##############################################################
+
+def list_motifs(motifsize,
+                ):
+
+    motifs = mfinder.list_motifs(motifsize)
+
+    all_motifs = []
+    motif_result = motifs.l
+    while (motif_result != None):
+        all_motifs.append(motif_result.val)
+                
+        motif_result = motif_result.next
+
+    return all_motifs
+
+def print_motifs(motifs,motifsize,outFile=None,sep=" ",links=False):
+    if outFile:
+        fstream = open(outFile,'w')
+    else:
+        fstream = sys.stdout
+
+    for m in motifs:
+        output = sep.join(["%i" % m,
+                           ])
+
+        fstream.write(output + '\n')
+
+        if links:
+            motif_edges = mfinder.motif_edges(m,motifsize)
+            edge_result = motif_edges.l
+            while (edge_result != None):
+                edge = mfinder.get_edge(edge_result.p)
+                s = int(edge.s)
+                t = int(edge.t)
+                output = sep.join(["%i" % s,
+                                   "%i" % t,
+                                   ])
+                fstream.write(output + '\n')
+                edge_result = edge_result.next
+
+    if outFile:
+        fstream.close()
+
+    return   
+
+##############################################################
+##############################################################
 # RANDOM NETWORK CODE
 ##############################################################
 ##############################################################

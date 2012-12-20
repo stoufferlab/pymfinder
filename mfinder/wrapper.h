@@ -57,6 +57,9 @@ int load_network_from_array(Network **N_p, int* edges, int edges_num);
 int read_network(Network **N_p, mfinder_input mfinderi);
 int randomize_network(Network **N_p, mfinder_input mfinderi);
 
+int single_connected_component(int64 id,int mtf_sz);
+list64* list_motifs(int mtf_sz);
+list* motif_edges(int64 id,int mtf_sz);
 list* random_network(mfinder_input mfinderi);
 list64* motif_structure(mfinder_input mfinderi);
 list64* motif_participation(mfinder_input mfinderi);

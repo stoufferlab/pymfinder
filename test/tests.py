@@ -11,9 +11,22 @@ from pymfinder import *
 import os
 filename = os.path.dirname(__file__) + "/../data/test.net"
 
+motifs = True
 randomize = True
 structure = True
 participation = True
+
+# list all motifs of a specific size
+if motifs:
+    msize = 4
+    m = list_motifs(motifsize = msize,
+                    )
+    print_motifs(m,
+                 motifsize = msize,
+                 outFile=None,
+                 sep=' ',
+                 links=True,
+                 )
 
 # generate a randomized version of the network
 if randomize:

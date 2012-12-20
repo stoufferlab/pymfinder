@@ -10,6 +10,8 @@
 *************************************************************************/
 
 #include "globals.h"
+#include "mat.h"
+#include "motif_ids.h"
 #include "wrapper.h"
 
 /*************************** Global variables ***************************/
@@ -425,6 +427,206 @@ read_network(Network **N_p, mfinder_input mfinderi)
   }
 
   return rc;
+}
+
+/********************************************************
+ * function : single_connected_component
+ *  Given a motif id and size,
+ *  Return whether there is a single connected component
+ * arguments:
+ *   id
+ *   mtf_siz
+ * return values:
+ *   TRUE/FALSE
+ *********************************************************/
+
+int single_connected_component(int64 id,int mtf_sz){
+  int i,j,k;
+  int added;
+
+  //fprintf(stderr,"checking the scc for id=%lli\n",id);
+
+  // build the adjacency matrix
+  Matrix *M;
+  M = init_matrix(mtf_sz);
+  fill_mat_id(M,id);
+
+  // collect members of the connected component here
+  int cc[mtf_sz+1];
+  int checked[mtf_sz+1];
+  for(i=1;i<=mtf_sz;i++){
+    cc[i] = FALSE;
+    checked[i] = FALSE;
+  }
+
+  // add the first node to the connected component
+  cc[1] = TRUE;
+  
+  // iteratively attempt to add more rows/columns to the cc
+  added = TRUE;
+  while(added == TRUE){
+    added = FALSE;
+    for(i=1;i<=mtf_sz;i++)
+      if(cc[i] == TRUE && checked[i] == FALSE){
+        checked[i] == TRUE;
+        for(j=1;j<=mtf_sz;j++)
+          if(MTRX(M,i,j)==1 || MTRX(M,j,i)==1)
+            if(cc[j] == FALSE){
+              cc[j] = TRUE;
+              added = TRUE;
+              break;
+            }
+      }
+  }
+
+  free_matrix(M);
+  free(M);     
+
+  for(i=1;i<=mtf_sz;++i)
+    if(cc[i] == FALSE)
+      return FALSE;
+
+  return TRUE;
+}
+
+/********************************************************
+ * function : list_all_motifs
+ *  List all motifs for a given size
+ *  --> copied largely from calc_final_results in results.c
+ * arguments:
+ *   AAA
+ *   BBB
+ *   CCC
+ * return values:
+ *   XXX
+ *   YYY
+ *********************************************************/
+
+list64* list_motifs(int mtf_sz){
+  int i,j,k,illegal_id=FALSE;
+  list64_item *l_id_res,*l_tmp;
+  int64 id,rep_id,rrep_id,mask_bit,mask_r,mask_c;
+
+  list64* iso_list;
+  list64* id_list_uniq;
+  list64* id_list_scc_false;
+  list64_init(&id_list_uniq);
+  list64_init(&id_list_scc_false);
+
+  for(id=0;id<=(int64)(pow(2,mtf_sz*mtf_sz)-1);id++){
+      illegal_id=FALSE;
+      
+      /*
+      //First check if we've already found this id via the motif isomorphisms
+      if(list64_get(id_list_all,(int64)id)!=NULL)
+        illegal_id = TRUE;
+
+      if(illegal_id)
+        continue;
+      */
+
+      //Second check if it does not contain self edges
+      for(i=0;i<mtf_sz;i++) {
+        //bits on the diagonal
+        mask_bit=(int64)pow(2,i*mtf_sz+i);
+        if(id & mask_bit) {
+          illegal_id = TRUE;
+          break;
+        }
+      }
+
+      //Third check if there is no isolated vertex (a vertex with no edges at all)
+      //this is done by checking that there is at list one edge
+      //at each row i or column i of the matrix
+      //(by bit manipulation)
+      for(i=0;i<mtf_sz;i++) {
+        mask_r=0;
+        mask_c=0;
+        for(j=0;j<mtf_sz;j++) {
+          mask_r |= (int64)pow(2,i*mtf_sz+j);
+          mask_c |= (int64)pow(2,i+j*mtf_sz);
+        }
+        if( ! ((id & mask_r) || (id & mask_c)) ) {
+          illegal_id = TRUE;
+          break;
+        }
+      }
+
+      if(illegal_id == TRUE)
+        continue;
+
+      // calculate the ids for all motif isomorphisms
+      iso_list=calc_mtf_id_iso(id,mtf_sz);
+
+      //Fourth check if it has a single connected component
+      l_tmp=list64_get_next(iso_list,NULL);
+      if(l_tmp!=NULL) {
+        rep_id=l_tmp->val;
+        if(list64_get(id_list_uniq,(int64)rep_id)==NULL && list64_get(id_list_scc_false,(int64)rep_id)==NULL){
+          if(single_connected_component(rep_id,mtf_sz) == FALSE){
+            list64_insert(id_list_scc_false,(int64)rep_id,NULL);
+            illegal_id = TRUE;
+          }
+        }else
+          illegal_id = TRUE;
+      }else
+        illegal_id = TRUE;
+
+      if(illegal_id == TRUE)
+        continue;
+
+      l_tmp=list64_get_next(iso_list,NULL);
+      rep_id=l_tmp->val;
+              
+      if(list64_get(id_list_uniq,(int64)rep_id)==NULL){
+        list64_insert(id_list_uniq,(int64)rep_id,NULL);
+        //list64_insert(id_list_all,(int64)rep_id,NULL);
+      }
+      
+      /*
+      for(l_tmp=list64_get_next(iso_list,NULL); l_tmp !=NULL; l_tmp=list64_get_next(iso_list,l_tmp)) {
+        rrep_id=l_tmp->val;
+        if(list64_get(id_list_all,(int64)rrep_id)==NULL){
+          list64_insert(id_list_all,(int64)rrep_id,NULL);
+          //fprintf(stdout,"iso_id %lli == iso_id %lli\n",rep_id,rrep_id);
+        }
+      }
+      */
+      
+      list64_free_mem(iso_list);
+  }
+
+  list64_free_mem(id_list_scc_false);
+
+  return id_list_uniq;
+  //list64_free_mem(id_list_uniq);
+}
+
+list* motif_edges(int64 id,int mtf_sz){
+  int i,j;
+  Matrix *M;
+  Edge *e;
+  list *motif_edges;
+  list_init(&motif_edges);
+
+  M = init_matrix(mtf_sz);
+  fill_mat_id(M,id);
+
+  for(i=1;i<=mtf_sz;i++)
+    for(j=1;j<=mtf_sz;j++)
+      if(MTRX(M,i,j)==1){
+        e=(Edge*)calloc(1,sizeof(Edge));
+        e->s = i;
+        e->t = j;
+        e->weight = 1;
+
+        list_insert(motif_edges,0,(void*)e);
+      }
+
+  free_matrix(M);
+  free(M);
+
+  return motif_edges;
 }
 
 /********************************************************
