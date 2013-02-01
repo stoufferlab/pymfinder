@@ -9,7 +9,7 @@ from pymfinder import *
 ##############################################################
 
 import os
-filename = os.path.dirname(__file__) + "/../data/test.net"
+filename = os.path.dirname(__file__) + "./../data/test.net"
 
 motifs = True
 randomize = True
