@@ -1,7 +1,7 @@
 from distutils.core import setup, Extension
 
 mfinder = Extension('_mfinder',
-                    sources=['/'.join(['mfinder',f]) for f in ['clustering.c',
+                    sources=['/'.join(['pymfinder','mfinder',f]) for f in ['clustering.c',
                                                                'globals.c',
                                                                'grassberger.c',
                                                                'hash.c',
@@ -38,11 +38,6 @@ setup(
                 'pymfinder.test',
                 'pymfinder.data',                
                 ],
-    package_dir = {'pymfinder' : '',
-                   'pymfinder.mfinder' : 'mfinder',
-                   'pymfinder.test' : 'test',
-                   'pymfinder.data' : 'data',
-                   },
     package_data = {'pymfinder.data' : ['test.net',]
                     },
     ext_package = 'pymfinder.mfinder',

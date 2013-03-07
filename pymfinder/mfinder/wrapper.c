@@ -503,9 +503,9 @@ int single_connected_component(int64 id,int mtf_sz){
  *********************************************************/
 
 list64* list_motifs(int mtf_sz){
-  int i,j,k,illegal_id=FALSE;
-  list64_item *l_id_res,*l_tmp;
-  int64 id,rep_id,rrep_id,mask_bit,mask_r,mask_c;
+  int i,j,illegal_id=FALSE;
+  list64_item *l_tmp;
+  int64 id,rep_id,mask_bit,mask_r,mask_c;
 
   list64* iso_list;
   list64* id_list_uniq;
@@ -517,15 +517,14 @@ list64* list_motifs(int mtf_sz){
       illegal_id=FALSE;
       
       /*
-      //First check if we've already found this id via the motif isomorphisms
+      //Check if we've already found this id via the motif isomorphisms
       if(list64_get(id_list_all,(int64)id)!=NULL)
         illegal_id = TRUE;
-
       if(illegal_id)
         continue;
       */
 
-      //Second check if it does not contain self edges
+      //Check if the motif contains self edges
       for(i=0;i<mtf_sz;i++) {
         //bits on the diagonal
         mask_bit=(int64)pow(2,i*mtf_sz+i);
@@ -534,8 +533,10 @@ list64* list_motifs(int mtf_sz){
           break;
         }
       }
+      if(illegal_id)
+        continue;
 
-      //Third check if there is no isolated vertex (a vertex with no edges at all)
+      //Check if there is no isolated vertex (a vertex with no edges at all)
       //this is done by checking that there is at list one edge
       //at each row i or column i of the matrix
       //(by bit manipulation)
@@ -551,37 +552,34 @@ list64* list_motifs(int mtf_sz){
           break;
         }
       }
-
       if(illegal_id == TRUE)
         continue;
 
       // calculate the ids for all motif isomorphisms
       iso_list=calc_mtf_id_iso(id,mtf_sz);
 
-      //Fourth check if it has a single connected component
+      //Check if the isomorphism is null
       l_tmp=list64_get_next(iso_list,NULL);
-      if(l_tmp!=NULL) {
-        rep_id=l_tmp->val;
-        if(list64_get(id_list_uniq,(int64)rep_id)==NULL && list64_get(id_list_scc_false,(int64)rep_id)==NULL){
-          if(single_connected_component(rep_id,mtf_sz) == FALSE){
-            list64_insert(id_list_scc_false,(int64)rep_id,NULL);
-            illegal_id = TRUE;
-          }
-        }else
-          illegal_id = TRUE;
-      }else
+      if(l_tmp==NULL)
         illegal_id = TRUE;
-
       if(illegal_id == TRUE)
         continue;
 
-      l_tmp=list64_get_next(iso_list,NULL);
+      //Check if the isomorphism is already in the list
       rep_id=l_tmp->val;
+      if(list64_get(id_list_uniq,(int64)rep_id)!=NULL)
+        illegal_id = TRUE;
+      if(illegal_id == TRUE)
+        continue;
+
+      //Check if the motif has a single connected component
+      if(single_connected_component(rep_id,mtf_sz) == FALSE)
+        //list64_insert(id_list_scc_false,(int64)rep_id,NULL);
+        illegal_id = TRUE;
+      if(illegal_id == TRUE)
+        continue;
               
-      if(list64_get(id_list_uniq,(int64)rep_id)==NULL){
-        list64_insert(id_list_uniq,(int64)rep_id,NULL);
-        //list64_insert(id_list_all,(int64)rep_id,NULL);
-      }
+      list64_insert(id_list_uniq,(int64)rep_id,NULL);
       
       /*
       for(l_tmp=list64_get_next(iso_list,NULL); l_tmp !=NULL; l_tmp=list64_get_next(iso_list,l_tmp)) {

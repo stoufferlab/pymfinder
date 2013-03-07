@@ -18,6 +18,7 @@ motifs = True
 randomize = True
 structure = True
 participation = True
+roles = True
 
 # list all motifs of a specific size
 if motifs:
@@ -75,6 +76,21 @@ if participation:
                         sep='\t',
                         header=True)
 
+# calculate the network's (node-by-node) motif-role participation
+if roles:
+    rr = motif_roles(filename,
+                     motifsize = 3,
+                     randomize = False,
+                     usemetropolis = False,
+                     stoufferIDs = False,
+                     )
+
+    # print out the results
+    print_roles(rr,
+                motifsize = 3,
+                outFile=None,
+                sep=' ',
+                header=True)
 ##############################################################
 ##############################################################
 # C'est fini
