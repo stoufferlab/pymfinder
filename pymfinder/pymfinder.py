@@ -24,7 +24,7 @@ STOUFFER_MOTIF_IDS = {12:  'S1',
                       78:  'D8',
                       }
 
-#key = size:(motif_id, (indegree,outdegree))
+#key = size:(motif_id, (npred,nprey))
 UNIPARTITE_ROLES = {2:[(2, [(0, 1),
                             (1, 0),
                             ]),
@@ -270,24 +270,33 @@ def randomized_network(mfinderi):
 
     return edges
 
-def print_random_network(edges,outFile=None,sep=" ",header=False):
+def print_random_network(edges,outFile=None,sep=" ",weighted=False,header=False):
     if outFile:
         fstream = open(outFile,'w')
     else:
         fstream = sys.stdout
 
     if header:
-        output = sep.join(['target',
-                           'source',
-                           'weight',])
+        if weighted:
+          output = sep.join(['target',
+                             'source',
+                             'weight',])
+        else:
+          output = sep.join(['target',
+                             'source',])
 
         fstream.write(output + '\n')
 
     for trg,src,w in sorted(edges):
-        output = sep.join(["%i" % trg,
-                           "%i" % src,
-                           "%i" % w,
-                           ])
+        if weighted:
+          output = sep.join(["%i" % trg,
+                             "%i" % src,
+                             "%i" % w,
+                             ])
+        else:
+          output = sep.join(["%i" % trg,
+                             "%i" % src,
+                             ])
 
         fstream.write(output + '\n')
 
@@ -567,22 +576,23 @@ def role_stats(mfinderi,network,stoufferIDs):
                 if m not in roles:
                     roles[m] = {}
 
-                indegree  = sum([(othernode,m) in _network for othernode in py_members if othernode != m])
-                outdegree = sum([(m,othernode) in _network for othernode in py_members if othernode != m])
+                npred  = sum([(othernode,m) in _network for othernode in py_members if othernode != m])
+                nprey = sum([(m,othernode) in _network for othernode in py_members if othernode != m])
 
-                key = (id, indegree, outdegree)
+                key = (id, npred, nprey)
+                #key = (id, indegree, outdegree)
 
                 if key not in possible_roles:
-                    if indegree > 0:
+                    if npred > 0:
                         connected_to = [othernode for othernode in py_members if othernode != m and (othernode,m) in _network]
-                        outdegrees = [sum([(i,j) in _network for j in py_members if j != i]) for i in connected_to]
-                        outdegrees.sort()
-                        key = tuple(list(key) + [tuple(outdegrees)])
+                        npreys = [sum([(i,j) in _network for j in py_members if j != i]) for i in connected_to]
+                        npreys.sort()
+                        key = tuple(list(key) + [tuple(npreys)])
                     else:
                         connected_to = [othernode for othernode in py_members if othernode != m and (m,othernode) in _network]
-                        indegrees = [sum([(j,i) in _network for j in py_members if j != i]) for i in connected_to]
-                        indegrees.sort()
-                        key = tuple(list(key) + [tuple(indegrees)])
+                        npreds = [sum([(j,i) in _network for j in py_members if j != i]) for i in connected_to]
+                        npreds.sort()
+                        key = tuple(list(key) + [tuple(npreds)])
 
                 if key not in possible_roles:
                     print >> sys.stderr, key
