@@ -40,8 +40,7 @@ UNIPARTITE_ROLES = {2:[(2, [(0, 1),
                               (1, 1),
                               (2, 0),
                               ]),
-                       (98,  [(1, 1),
-                              ]),
+                       (98,  [(1, 1),]),
                        (36,  [(0, 1),
                               (2, 0),
                               ]),
@@ -64,19 +63,61 @@ UNIPARTITE_ROLES = {2:[(2, [(0, 1),
                               ]),
                        (102, [(1, 1),
                               (2, 1),
-                              (1, 2),
-                              ]),
-                       (238, [(2, 2),
-                              ]),
+                              (1, 2),]),
+                       (238, [(2, 2),]),
                        (110, [(1, 2),
                               (2, 1),
-                              (2, 2),
-                              ]),
+                              (2, 2),]),
                        (78,  [(1, 1),
-                              (2, 2),
+                              (2, 2),]),
+                       ],
+                    }
+
+#key as for positions but with two species
+UNIPARTITE_LINKS = {2:[(2,  [((0,1),(1,0)),]), #Tuples are (eaten by,eats) ((eater),(eaten)))
+                       (6,  [((1,1),(1,1)),]),
+                        ],
+
+                    3:[(12,  [((0, 1),(1, 1)), #1
+                              ((1, 1),(1, 0)), #2
+                              ]),
+                       (38,  [((0, 2),(1, 1)), #3
+                              ((1, 1),(2, 0)), #4
+                              ((0, 2),(2, 0)), #5
+                              ]),
+                       (98,  [((1, 1),(1, 1)), #6
+                              ]),
+                       (36,  [((0, 1),(2, 0)), #7
+                              ]),
+                       (6,   [((0, 2),(1, 0)), #8
+                              ]),
+                       (46,  [((1, 2),(2, 0)), #9
+                              ((1, 2),(1, 2)), #10
+                              ]),
+                       (108, [((0, 2),(2, 1)), #11
+                              ((2, 1),(2, 1)), #12
+                              ]),
+                       (14,  [((1, 2),(1, 1)), #13
+                              ((1, 2),(1, 0)), #14
+                              ]),
+                       (74,  [((0, 1),(2, 1)), #15
+                              ((1, 1),(2, 1)), #16
+                              ]),
+                       (102, [((1, 1),(2, 1)), #17
+                              ((1, 2),(2, 1)), #18
+                              ((1, 2),(1, 1)), #19
+                              ]),
+                       (238, [((2, 2),(2, 2)), #20
+                              ]),
+                       (110, [((1, 2),(2, 1)), #21
+                              ((1, 2),(2, 2)), #22
+                              ((2, 2),(2, 1)), #23
+                              ]),
+                       (78,  [((1, 1),(2, 2)), #24
                               ]),
                        ],
                     }
+
 
 ##############################################################
 ##############################################################
@@ -420,7 +461,6 @@ def participation_stats(mfinderi,stoufferIDs):
 
         else:
             break
-
     participation = {}
     r_l = results.l
     members = mfinder.intArray(mfinderi.MotifSize)
@@ -457,14 +497,14 @@ def participation_stats(mfinderi,stoufferIDs):
             except KeyError:
                 participation[n][id] = 0
 
-        r_l = r_l.next
+        r_l = r_l.next 
 
     if stoufferIDs and mfinderi.MotifSize == 3:
         for n in participation:
             participation[n] = dict([(STOUFFER_MOTIF_IDS[id],participation[n][id]) for id in participation[n]])
         return participation
     else:
-        return participation    
+        return participation    #participation[motif_ID][species] = number of times that species is in that motif
 
 def motif_participation(network,
                         motifsize = 3,
@@ -514,6 +554,150 @@ def print_participation(participation_stats,outFile=None,sep=" ",header=False):
 
     for n in sorted(participation_stats.keys()):
         output = sep.join([str(n)] + list(map(str,[j for i,j in sorted(participation_stats[n].items())])))
+        fstream.write(output + '\n')
+
+    if outFile:
+        fstream.close()
+
+    return
+
+##############################################################
+##############################################################
+# LINK PARTICIPATION CODE
+##############################################################
+##############################################################
+
+def link_participation_stats(mfinderi,stoufferIDs):
+    results = mfinder.motif_participation(mfinderi)
+
+    maxed_out_member_list = False
+    max_count = 0
+    while True:
+        maxed_out_member_list = False
+
+        r_l = results.l
+        while (r_l != None):
+            motif = mfinder.get_motif(r_l.p)
+
+            if(int(motif.count) != motif.all_members.size):
+                maxed_out_member_list = True
+                max_count = max(max_count, int(motif.count))
+
+            r_l = r_l.next
+
+        if maxed_out_member_list:
+            sys.stderr.write("upping the anty bitches!\n")
+            mfinderi.MaxMembersListSz = max_count + 1
+            results = mfinder.motif_participation(mfinderi)
+
+        else:
+            break
+    linkparticipation = {}
+    r_l = results.l
+    members = mfinder.intArray(mfinderi.MotifSize)
+    while (r_l != None):
+        motif = mfinder.get_motif(r_l.p)
+        id = int(motif.id)
+
+        am_l = motif.all_members.l
+        while (am_l != None):
+            mfinder.get_motif_members(am_l.p, members, mfinderi.MotifSize)
+            py_members = [int(members[i]) for i in xrange(mfinderi.MotifSize)] #Species in that motif
+
+            for m in py_members:           #m is a species
+              for n in py_members:         #n is a species
+                if m!=n:
+                  link=(m, n)
+                  if link not in linkparticipation:
+                    linkparticipation[link] = {}
+                  try:
+                    linkparticipation[link][id] += 1
+                  except KeyError:
+                    linkparticipation[link][id] = 1
+            am_l = am_l.next
+
+        r_l = r_l.next
+
+    r_l = results.l
+
+    while (r_l != None):
+        motif = mfinder.get_motif(r_l.p)
+        id = int(motif.id)
+
+        for link in linkparticipation:
+            try:
+                x = linkparticipation[link][id]
+            except KeyError:
+                linkparticipation[link][id] = 0
+
+        r_l = r_l.next 
+    return linkparticipation
+
+def link_participation(network,
+                        motifsize = 3,
+                        maxmemberslistsz = 1000,
+                        randomize = False,
+                        usemetropolis = False,
+                        stoufferIDs = False,
+                        ):
+
+    # initialize the heinous input struct
+    web = mfinder.mfinder_input()
+
+    # setup the network info
+    web.Edges, web.NumEdges, node_dict = mfinder_network_setup(network)
+
+    # parameterize the analysis
+    web.MotifSize = motifsize
+    web.MaxMembersListSz = maxmemberslistsz
+
+    # do we want to randomize the network first?
+    if not randomize:
+        web.Randomize = 0
+    else:
+        web.Randomize = 1
+        # if so, should we use the metropolis algorithm?
+        if not usemetropolis:
+            web.UseMetropolis = 0
+        else:
+            web.UseMetropolis = 1
+        
+    pl_stats = link_participation_stats(web,stoufferIDs)
+
+#Don't rename the nodes or else there's trouble.
+    #try:
+    #    return decode_stats(pl_stats,node_dict)
+    #except UnboundLocalError:
+    #    return pl_stats
+
+    #Dealing with (a, b), (b, a) issues:
+    netfile=open(network)
+    intlist=[]
+    for line in netfile:
+      (pred,prey)=line.split()
+      pair=(int(pred),int(prey))
+      intlist.append(pair)
+
+    link_stats={}
+    for link in pl_stats:
+      if link in intlist:
+        link_stats[link]={}
+    for key in link_stats:
+      link_stats[key]=pl_stats[key]
+    return link_stats    
+
+def print_link_participation(link_participation_stats,outFile=None,sep=" ",header=False):
+    if outFile:
+        fstream = open(outFile,'w')
+    else:
+        fstream = sys.stdout
+
+    if header:
+        output = sep.join(["link"]+list(map(str,sorted(link_participation_stats[link_participation_stats.keys()[0]].keys()))))
+        fstream.write(output + '\n')
+
+    for n in sorted(link_participation_stats.keys()):
+        output = sep.join([str(n)] + list(map(str,[j for i,j in sorted(link_participation_stats[n].items())])))
         fstream.write(output + '\n')
 
     if outFile:
@@ -607,14 +791,12 @@ def role_stats(mfinderi,network,stoufferIDs):
             am_l = am_l.next
 
         r_l = r_l.next
-
     for n in roles:
         for r in possible_roles:
             try:
                 x = roles[n][r]
             except KeyError:
                 roles[n][r] = 0
-
     return roles
 
 def motif_roles(network,
@@ -676,6 +858,161 @@ def print_roles(role_stats,motifsize,outFile=None,sep=" ",header=False):
         fstream.close()
 
     return
+
+##############################################################
+##############################################################
+# LINK ROLES CODE
+##############################################################
+##############################################################
+
+def link_role_stats(mfinderi,network,stoufferIDs): #End product should be a nested dict [link][linkrole]: count
+    results = mfinder.motif_participation(mfinderi)
+
+    maxed_out_member_list = False
+    max_count = 0
+    while True:
+        maxed_out_member_list = False
+
+        r_l = results.l
+
+        while (r_l != None):
+            motif = mfinder.get_motif(r_l.p)
+
+            if(int(motif.count) != motif.all_members.size):
+                maxed_out_member_list = True
+                max_count = max(max_count, int(motif.count))
+
+            r_l = r_l.next
+
+        if maxed_out_member_list:
+            sys.stderr.write("upping the anty bitches!\n")
+            mfinderi.MaxMembersListSz = max_count + 1
+            results = mfinder.motif_participation(mfinderi)
+
+        else:
+            break
+
+    _network = [(i,j) for i,j,k in network]
+
+    possible_links = []
+    for motif,links in UNIPARTITE_LINKS[mfinderi.MotifSize]:
+        possible_links += [tuple([motif] + list(link)) for link in links]
+
+    lroles = {}           #roles[link]=(motifID, npred, nprey)
+    for link in _network:
+      (a,b)=link
+      if (b,a) not in lroles: #To account for double links
+        lroles[link]={}
+
+
+    r_l = results.l
+    members = mfinder.intArray(mfinderi.MotifSize)
+    while (r_l != None):
+        motif = mfinder.get_motif(r_l.p)
+        id = int(motif.id)
+        lindex = [i for i,j in UNIPARTITE_LINKS[mfinderi.MotifSize]].index(id)
+        am_l = motif.all_members.l
+        while (am_l != None):
+            mfinder.get_motif_members(am_l.p, members, mfinderi.MotifSize)
+            py_members = [int(members[i]) for i in xrange(mfinderi.MotifSize)]
+            for link in lroles:  #This will avoid the (a,b) vas (b,a) difficulty.
+              (sp1,sp2)=link
+              if sp1 in py_members and sp2 in py_members:
+                npred1  = sum([(othernode,sp1) in _network for othernode in py_members if othernode != sp1])
+                nprey1 = sum([(sp1,othernode) in _network for othernode in py_members if othernode != sp1])
+                npred2  = sum([(othernode,sp2) in _network for othernode in py_members if othernode != sp2])
+                nprey2 = sum([(sp2,othernode) in _network for othernode in py_members if othernode != sp2])
+                key = (id, (npred1, nprey1),(npred2, nprey2))
+
+                if key not in possible_links:
+                  if sp1==sp2: #Don't care about cannibalistic links
+                    #print >> sys.stderr, "We don't cotton to no cannibals 'round here"
+                    pass
+                  else:
+                    altkey = (id, (npred2, nprey2),(npred1, nprey1))
+                    if altkey not in possible_links:
+                      print key, altkey, link
+                      print >> sys.stderr, "Apparently there is a role you aren't accounting for in roles.py."
+                      sys.exit()
+                    else:
+                      key=altkey
+                try:
+                  lroles[link][key] += 1
+                except KeyError:
+                  lroles[link][key] = 1
+
+            am_l = am_l.next
+
+        r_l = r_l.next
+    for l in lroles:
+        for r in possible_links:
+            try:
+                x = lroles[l][r]
+            except KeyError:
+                lroles[l][r] = 0
+    return lroles
+
+def link_roles(network,
+                motifsize = 3,
+                maxmemberslistsz = 1000,
+                randomize = False,
+                usemetropolis = False,
+                stoufferIDs = False,
+                ):
+
+    # initialize the heinous input struct
+    web = mfinder.mfinder_input()
+
+    # setup the network info
+    web.Edges, web.NumEdges, node_dict = mfinder_network_setup(network)
+
+    # parameterize the analysis
+    web.MotifSize = motifsize
+    web.MaxMembersListSz = maxmemberslistsz
+
+    # do we want to randomize the network first?
+    if not randomize:
+        web.Randomize = 0
+    else:
+        web.Randomize = 1
+        # if so, should we use the metropolis algorithm?
+        if not usemetropolis:
+            web.UseMetropolis = 0
+        else:
+            web.UseMetropolis = 1
+    
+    network, node_dict = human_network_setup(network)
+    r_stats = link_role_stats(web,network,stoufferIDs)
+
+    return r_stats
+    #try:
+    #    return decode_stats(r_stats,node_dict)
+    #except UnboundLocalError:
+    #    return r_stats
+
+def print_link_roles(link_role_stats,motifsize,outFile=None,sep=" ",header=False):
+    if outFile:
+        fstream = open(outFile,'w')
+    else:
+        fstream = sys.stdout
+
+    lroles = []
+    for motif,rs in UNIPARTITE_LINKS[motifsize]:
+        lroles += [tuple([motif] + list(r)) for r in rs]
+
+    if header:
+        output = sep.join(["link"]+list(map(str,range(1,len(lroles)+1))))
+        fstream.write(output + '\n')
+
+    for n in sorted(link_role_stats.keys()):
+        output = sep.join([str(n)] + list(map(str,[link_role_stats[n][role] for role in lroles])))
+        fstream.write(output + '\n')
+
+    if outFile:
+        fstream.close()
+
+    return
+
 
 ##############################################################
 ##############################################################
