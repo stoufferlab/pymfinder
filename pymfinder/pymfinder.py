@@ -221,6 +221,11 @@ def decode_stats(stats,node_dictionary):
     reverse_dictionary = dict([(j,i) for i,j in node_dictionary.items()])
     return dict([(reverse_dictionary[i],j) for i,j in stats.items()])
 
+# if we've relabeled the nodes, make sure the output corresponds to the input labels
+def decode_link_stats(stats,node_dictionary):
+    reverse_dictionary = dict([(j,i) for i,j in node_dictionary.items()])
+    return dict([((reverse_dictionary[i[0]],reverse_dictionary[i[1]]),j) for i,j in stats.items()])
+
 ##############################################################
 ##############################################################
 # MOTIF GENERATING CODE
@@ -455,7 +460,7 @@ def participation_stats(mfinderi,stoufferIDs):
             r_l = r_l.next
 
         if maxed_out_member_list:
-            sys.stderr.write("upping the anty bitches!\n")
+            sys.stderr.write("upping the ante bitches!\n")
             mfinderi.MaxMembersListSz = max_count + 1
             results = mfinder.motif_participation(mfinderi)
 
@@ -567,7 +572,7 @@ def print_participation(participation_stats,outFile=None,sep=" ",header=False):
 ##############################################################
 ##############################################################
 
-def link_participation_stats(mfinderi,stoufferIDs):
+def link_participation_stats(mfinderi,network,stoufferIDs):
     results = mfinder.motif_participation(mfinderi)
 
     maxed_out_member_list = False
@@ -586,12 +591,15 @@ def link_participation_stats(mfinderi,stoufferIDs):
             r_l = r_l.next
 
         if maxed_out_member_list:
-            sys.stderr.write("upping the anty bitches!\n")
+            sys.stderr.write("upping the ante bitches!\n")
             mfinderi.MaxMembersListSz = max_count + 1
             results = mfinder.motif_participation(mfinderi)
 
         else:
             break
+
+    _network = [(i,j) for i,j,k in network]
+
     linkparticipation = {}
     r_l = results.l
     members = mfinder.intArray(mfinderi.MotifSize)
@@ -602,22 +610,25 @@ def link_participation_stats(mfinderi,stoufferIDs):
         am_l = motif.all_members.l
         while (am_l != None):
             mfinder.get_motif_members(am_l.p, members, mfinderi.MotifSize)
-            py_members = [int(members[i]) for i in xrange(mfinderi.MotifSize)] #Species in that motif
+            py_members = [int(members[i]) for i in xrange(mfinderi.MotifSize)]
 
-            for m in py_members:           #m is a species
+
+
+            for m in py_members:
               for n in py_members:         #n is a species
                 if m!=n:
                   link=(m, n)
-                  if link not in linkparticipation:
-                    linkparticipation[link] = {}
-                  try:
-                    linkparticipation[link][id] += 1
-                  except KeyError:
-                    linkparticipation[link][id] = 1
+                  if link in _network:
+
+                    if link not in linkparticipation:
+                      linkparticipation[link] = {}
+                    try:
+                      linkparticipation[link][id] += 1
+                    except KeyError:
+                      linkparticipation[link][id] = 1
             am_l = am_l.next
 
         r_l = r_l.next
-
     r_l = results.l
 
     while (r_l != None):
@@ -631,6 +642,7 @@ def link_participation_stats(mfinderi,stoufferIDs):
                 linkparticipation[link][id] = 0
 
         r_l = r_l.next 
+
     return linkparticipation
 
 def link_participation(network,
@@ -661,14 +673,14 @@ def link_participation(network,
             web.UseMetropolis = 0
         else:
             web.UseMetropolis = 1
-        
-    pl_stats = link_participation_stats(web,stoufferIDs)
 
-#Don't rename the nodes or else there's trouble.
-    #try:
-    #    return decode_stats(pl_stats,node_dict)
-    #except UnboundLocalError:
-    #    return pl_stats
+    network, node_dict = human_network_setup(network)
+    pl_stats = link_participation_stats(web,network,stoufferIDs)
+
+    try:
+        return decode_link_stats(pl_stats,node_dict)
+    except UnboundLocalError:
+        return pl_stats
 
     #Dealing with (a, b), (b, a) issues:
     netfile=open(network)
@@ -676,7 +688,9 @@ def link_participation(network,
     for line in netfile:
       (pred,prey)=line.split()
       pair=(int(pred),int(prey))
-      intlist.append(pair)
+      pair2=(int(prey),int(pred))
+      if pair2 not in intlist:
+        intlist.append(pair)
 
     link_stats={}
     for link in pl_stats:
@@ -696,8 +710,8 @@ def print_link_participation(link_participation_stats,outFile=None,sep=" ",heade
         output = sep.join(["link"]+list(map(str,sorted(link_participation_stats[link_participation_stats.keys()[0]].keys()))))
         fstream.write(output + '\n')
 
-    for n in sorted(link_participation_stats.keys()):
-        output = sep.join([str(n)] + list(map(str,[j for i,j in sorted(link_participation_stats[n].items())])))
+    for (a, b) in sorted(link_participation_stats.keys()):
+        output = sep.join(['('+str(a)+','+str(b)+')'] + list(map(str,[j for i,j in sorted(link_participation_stats[(a, b)].items())])))
         fstream.write(output + '\n')
 
     if outFile:
@@ -730,7 +744,7 @@ def role_stats(mfinderi,network,stoufferIDs):
             r_l = r_l.next
 
         if maxed_out_member_list:
-            sys.stderr.write("upping the anty bitches!\n")
+            sys.stderr.write("upping the ante bitches!\n")
             mfinderi.MaxMembersListSz = max_count + 1
             results = mfinder.motif_participation(mfinderi)
 
@@ -885,7 +899,7 @@ def link_role_stats(mfinderi,network,stoufferIDs): #End product should be a nest
             r_l = r_l.next
 
         if maxed_out_member_list:
-            sys.stderr.write("upping the anty bitches!\n")
+            sys.stderr.write("upping the ante bitches!\n")
             mfinderi.MaxMembersListSz = max_count + 1
             results = mfinder.motif_participation(mfinderi)
 
@@ -901,9 +915,8 @@ def link_role_stats(mfinderi,network,stoufferIDs): #End product should be a nest
     lroles = {}           #roles[link]=(motifID, npred, nprey)
     for link in _network:
       (a,b)=link
-      if (b,a) not in lroles: #To account for double links
+      if int(a)!=int(b):
         lroles[link]={}
-
 
     r_l = results.l
     members = mfinder.intArray(mfinderi.MotifSize)
@@ -931,7 +944,7 @@ def link_role_stats(mfinderi,network,stoufferIDs): #End product should be a nest
                   else:
                     altkey = (id, (npred2, nprey2),(npred1, nprey1))
                     if altkey not in possible_links:
-                      print key, altkey, link
+                      #print key, altkey, link
                       print >> sys.stderr, "Apparently there is a role you aren't accounting for in roles.py."
                       sys.exit()
                     else:
@@ -984,11 +997,10 @@ def link_roles(network,
     network, node_dict = human_network_setup(network)
     r_stats = link_role_stats(web,network,stoufferIDs)
 
-    return r_stats
-    #try:
-    #    return decode_stats(r_stats,node_dict)
-    #except UnboundLocalError:
-    #    return r_stats
+    try:
+        return decode_link_stats(r_stats,node_dict)
+    except UnboundLocalError:
+        return r_stats
 
 def print_link_roles(link_role_stats,motifsize,outFile=None,sep=" ",header=False):
     if outFile:
@@ -1004,8 +1016,8 @@ def print_link_roles(link_role_stats,motifsize,outFile=None,sep=" ",header=False
         output = sep.join(["link"]+list(map(str,range(1,len(lroles)+1))))
         fstream.write(output + '\n')
 
-    for n in sorted(link_role_stats.keys()):
-        output = sep.join([str(n)] + list(map(str,[link_role_stats[n][role] for role in lroles])))
+    for (a, b) in sorted(link_role_stats.keys()):
+        output = sep.join(['('+str(a)+','+str(b)+')'] + list(map(str,[link_role_stats[(a, b)][role] for role in lroles])))
         fstream.write(output + '\n')
 
     if outFile:
