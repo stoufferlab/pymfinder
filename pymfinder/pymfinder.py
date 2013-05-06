@@ -220,13 +220,13 @@ def print_random_network(edges,outFile=None,sep=" ",weighted=False,header=False)
 
     for trg,src,w in sorted(edges):
         if weighted:
-          output = sep.join(["%i" % trg,
-                             "%i" % src,
-                             "%i" % w,
+          output = sep.join(["%s" % trg,
+                             "%s" % src,
+                             "%s" % w,
                              ])
         else:
-          output = sep.join(["%i" % trg,
-                             "%i" % src,
+          output = sep.join(["%s" % trg,
+                             "%s" % src,
                              ])
 
         fstream.write(output + '\n')
