@@ -1,82 +1,8 @@
-#!/usr/bin/python
 
 import mfinder.mfinder as mfinder
 import sys
 
-##############################################################
-##############################################################
-# USEFUL GLOBAL VARIABLES
-##############################################################
-##############################################################
-
-STOUFFER_MOTIF_IDS = {12:  'S1',
-                      38:  'S2',
-                      98:  'S3',
-                      36:  'S4',
-                      6:   'S5',
-                      46:  'D1',
-                      108: 'D2',
-                      14:  'D3',
-                      74:  'D4',
-                      102: 'D5',
-                      238: 'D6',
-                      110: 'D7',
-                      78:  'D8',
-                      }
-
-#key = size:(motif_id, (npred,nprey))
-UNIPARTITE_ROLES = {2:[(2, [(0, 1),
-                            (1, 0),
-                            ]),
-                       (6, [(1, 1),
-                            ]),
-                       ],
-
-                    3:[(12,  [(0, 1),
-                              (1, 1),
-                              (1, 0),
-                              ]),
-                       (38,  [(0, 2),
-                              (1, 1),
-                              (2, 0),
-                              ]),
-                       (98,  [(1, 1),
-                              ]),
-                       (36,  [(0, 1),
-                              (2, 0),
-                              ]),
-                       (6,   [(0, 2),
-                              (1, 0),
-                              ]),
-                       (46,  [(1, 2),
-                              (2, 0),
-                              ]),
-                       (108, [(0, 2),
-                              (2, 1),
-                              ]),
-                       (14,  [(1, 2),
-                              (1, 1),
-                              (1, 0),
-                              ]),
-                       (74,  [(0, 1),
-                              (1, 1),
-                              (2, 1),
-                              ]),
-                       (102, [(1, 1),
-                              (2, 1),
-                              (1, 2),
-                              ]),
-                       (238, [(2, 2),
-                              ]),
-                       (110, [(1, 2),
-                              (2, 1),
-                              (2, 2),
-                              ]),
-                       (78,  [(1, 1),
-                              (2, 2),
-                              ]),
-                       ],
-                    }
+from roles import *
 
 ##############################################################
 ##############################################################
@@ -176,6 +102,11 @@ def human_network_setup(network):
         sys.exit()
 
 # if we've relabeled the nodes, make sure the output corresponds to the input labels
+# if we've relabeled the nodes, make sure the output corresponds to the input labels
+def decode_net(edges,node_dictionary):
+    reverse_dictionary = dict([(j,i) for i,j in node_dictionary.items()])
+    return [(reverse_dictionary[i],reverse_dictionary[j],k) for i,j,k in edges]
+
 def decode_stats(stats,node_dictionary):
     reverse_dictionary = dict([(j,i) for i,j in node_dictionary.items()])
     return dict([(reverse_dictionary[i],j) for i,j in stats.items()])
@@ -252,7 +183,7 @@ def random_network(network,
     else:
         web.UseMetropolis = 1
 
-    return randomized_network(web)
+    return decode_net(randomized_network(web), node_dict)
         
 def randomized_network(mfinderi):
     results = mfinder.random_network(mfinderi)
@@ -414,7 +345,7 @@ def participation_stats(mfinderi,stoufferIDs):
             r_l = r_l.next
 
         if maxed_out_member_list:
-            sys.stderr.write("upping the anty bitches!\n")
+            #sys.stderr.write("upping the ante bitches!\n")
             mfinderi.MaxMembersListSz = max_count + 1
             results = mfinder.motif_participation(mfinderi)
 
@@ -527,7 +458,7 @@ def print_participation(participation_stats,outFile=None,sep=" ",header=False):
 ##############################################################
 ##############################################################
 
-def role_stats(mfinderi,network,stoufferIDs):
+def role_stats(mfinderi,network,stoufferIDs,networktype):
     results = mfinder.motif_participation(mfinderi)
 
     maxed_out_member_list = False
@@ -546,7 +477,7 @@ def role_stats(mfinderi,network,stoufferIDs):
             r_l = r_l.next
 
         if maxed_out_member_list:
-            sys.stderr.write("upping the anty bitches!\n")
+            #sys.stderr.write("upping the ante bitches!\n")
             mfinderi.MaxMembersListSz = max_count + 1
             results = mfinder.motif_participation(mfinderi)
 
@@ -556,8 +487,12 @@ def role_stats(mfinderi,network,stoufferIDs):
     _network = [(i,j) for i,j,k in network]
 
     possible_roles = []
-    for motif,roles in UNIPARTITE_ROLES[mfinderi.MotifSize]:
-        possible_roles += [tuple([motif] + list(role)) for role in roles]
+    if networktype == "unipartite":
+      for motif,roles in UNIPARTITE_ROLES[mfinderi.MotifSize]:
+          possible_roles += [tuple([motif] + list(role)) for role in roles]
+    elif networktype == "bipartite":
+      for motif,roles in BIPARTITE_ROLES[mfinderi.MotifSize]:
+          possible_roles += [tuple([motif] + list(role)) for role in roles]
 
     roles = {}
     r_l = results.l
@@ -565,7 +500,6 @@ def role_stats(mfinderi,network,stoufferIDs):
     while (r_l != None):
         motif = mfinder.get_motif(r_l.p)
         id = int(motif.id)
-        mindex = [i for i,j in UNIPARTITE_ROLES[mfinderi.MotifSize]].index(id)
         
         am_l = motif.all_members.l
         while (am_l != None):
@@ -580,8 +514,9 @@ def role_stats(mfinderi,network,stoufferIDs):
                 nprey = sum([(m,othernode) in _network for othernode in py_members if othernode != m])
 
                 key = (id, npred, nprey)
-                #key = (id, indegree, outdegree)
 
+                # if the node's in and out degrees are insufficient to discern its role
+                # we will add the degrees of the nodes it interacts with (its neighbors)
                 if key not in possible_roles:
                     if npred > 0:
                         connected_to = [othernode for othernode in py_members if othernode != m and (othernode,m) in _network]
@@ -615,7 +550,12 @@ def role_stats(mfinderi,network,stoufferIDs):
             except KeyError:
                 roles[n][r] = 0
 
-    return roles
+    if stoufferIDs and mfinderi.MotifSize == 3 and networktype == "unipartite":
+        for n in roles:
+            roles[n] = dict([(possible_roles.index(r)+1,roles[n][r]) for r in roles[n]])
+        return roles
+    else:
+        return roles
 
 def motif_roles(network,
                 motifsize = 3,
@@ -623,6 +563,7 @@ def motif_roles(network,
                 randomize = False,
                 usemetropolis = False,
                 stoufferIDs = False,
+                networktype = "unipartite",
                 ):
 
     # initialize the heinous input struct
@@ -647,25 +588,32 @@ def motif_roles(network,
             web.UseMetropolis = 1
     
     network, node_dict = human_network_setup(network)    
-    r_stats = role_stats(web,network,stoufferIDs)
+    r_stats = role_stats(web,network,stoufferIDs,networktype)
 
     try:
         return decode_stats(r_stats,node_dict)
     except UnboundLocalError:
         return r_stats
 
-def print_roles(role_stats,motifsize,outFile=None,sep=" ",header=False):
+def print_roles(role_stats,outFile=None,sep=" ",header=False):
     if outFile:
         fstream = open(outFile,'w')
     else:
         fstream = sys.stdout
 
-    roles = []
-    for motif,rs in UNIPARTITE_ROLES[motifsize]:
-        roles += [tuple([motif] + list(r)) for r in rs]
+    roles = sorted(role_stats[role_stats.keys()[0]].keys())
 
     if header:
-        output = sep.join(["node"]+list(map(str,range(1,len(roles)+1))))
+        try:
+            funkyroles = []
+            for role in roles:
+                if len(role) == 3:
+                    funkyroles.append(role)
+                else:
+                    funkyroles.append(tuple(role[:3] + tuple(role[-1])))
+            output = sep.join(["node"]+list(map(str,[",".join(map(str,role)) for role in funkyroles])))
+        except TypeError:
+            output = sep.join(["node"]+list(map(str,roles)))
         fstream.write(output + '\n')
 
     for n in sorted(role_stats.keys()):
