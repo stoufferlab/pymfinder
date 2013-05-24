@@ -19,6 +19,7 @@ STOUFFER_MOTIF_IDS = {12:  'S1',
                       78:  'D8',
                       }
 
+#key = (npred,nprey)
 STOUFFER_ROLE_IDS = dict(zip([(12, 0, 1),
                               (12, 1, 1),
                               (12, 1, 0),
