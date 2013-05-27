@@ -1,5 +1,5 @@
 
-import mfinder.mfinder as mfinder
+import mfinder.mfinder as pmfinder
 import sys
 
 from roles import *
@@ -56,7 +56,7 @@ def relabel_nodes(links):
     return links, node_dict
     
 def gen_mfinder_network(links):
-    edges = mfinder.intArray(len(links)*3+1)
+    edges = pmfinder.intArray(len(links)*3+1)
     for i in range(len(links)):
         try:
             s,t,w = links[i]
@@ -120,7 +120,7 @@ def decode_stats(stats,node_dictionary):
 def list_motifs(motifsize,
                 ):
 
-    motifs = mfinder.list_motifs(motifsize)
+    motifs = pmfinder.list_motifs(motifsize)
 
     all_motifs = []
     motif_result = motifs.l
@@ -144,10 +144,10 @@ def print_motifs(motifs,motifsize,outFile=None,sep=" ",links=False):
         fstream.write(output + '\n')
 
         if links:
-            motif_edges = mfinder.motif_edges(m,motifsize)
+            motif_edges = pmfinder.motif_edges(m,motifsize)
             edge_result = motif_edges.l
             while (edge_result != None):
-                edge = mfinder.get_edge(edge_result.p)
+                edge = pmfinder.get_edge(edge_result.p)
                 s = int(edge.s)
                 t = int(edge.t)
                 output = sep.join(["%i" % s,
@@ -172,7 +172,7 @@ def random_network(network,
                    ):
 
     # initialize the heinous input struct
-    web = mfinder.mfinder_input()
+    web = pmfinder.mfinder_input()
 
     # setup the network info
     web.Edges, web.NumEdges, node_dict = mfinder_network_setup(network)
@@ -186,12 +186,12 @@ def random_network(network,
     return decode_net(randomized_network(web), node_dict)
         
 def randomized_network(mfinderi):
-    results = mfinder.random_network(mfinderi)
+    results = pmfinder.random_network(mfinderi)
     
     edges = []
     edge_result = results.l
     while (edge_result != None):
-        edge = mfinder.get_edge(edge_result.p)
+        edge = pmfinder.get_edge(edge_result.p)
         s = int(edge.s)
         t = int(edge.t)
         w = int(edge.weight)
@@ -250,7 +250,7 @@ def motif_structure(network,
                     ):
 
     # initialize the heinous input struct
-    web = mfinder.mfinder_input()
+    web = pmfinder.mfinder_input()
 
     # setup the network info
     web.Edges, web.NumEdges, node_dict = mfinder_network_setup(network)
@@ -266,12 +266,12 @@ def motif_structure(network,
     return motif_stats(web,stoufferIDs)
         
 def motif_stats(mfinderi,stoufferIDs):
-    results = mfinder.motif_structure(mfinderi)
+    results = pmfinder.motif_structure(mfinderi)
 
     motif_stats = {}
     motif_result = results.l
     while (motif_result != None):
-        motif = mfinder.get_motif_result(motif_result.p)
+        motif = pmfinder.get_motif_result(motif_result.p)
 
         motif_id = int(motif.id)
         if motif_id in motif_stats:
@@ -327,7 +327,7 @@ def print_motif_structure(motif_stats,outFile=None,sep=" ",header=False):
 ##############################################################
 
 def participation_stats(mfinderi,stoufferIDs):
-    results = mfinder.motif_participation(mfinderi)
+    results = pmfinder.motif_participation(mfinderi)
 
     maxed_out_member_list = False
     max_count = 0
@@ -336,7 +336,7 @@ def participation_stats(mfinderi,stoufferIDs):
 
         r_l = results.l
         while (r_l != None):
-            motif = mfinder.get_motif(r_l.p)
+            motif = pmfinder.get_motif(r_l.p)
 
             if(int(motif.count) != motif.all_members.size):
                 maxed_out_member_list = True
@@ -347,21 +347,21 @@ def participation_stats(mfinderi,stoufferIDs):
         if maxed_out_member_list:
             #sys.stderr.write("upping the ante bitches!\n")
             mfinderi.MaxMembersListSz = max_count + 1
-            results = mfinder.motif_participation(mfinderi)
+            results = pmfinder.motif_participation(mfinderi)
 
         else:
             break
 
     participation = {}
     r_l = results.l
-    members = mfinder.intArray(mfinderi.MotifSize)
+    members = pmfinder.intArray(mfinderi.MotifSize)
     while (r_l != None):
-        motif = mfinder.get_motif(r_l.p)
+        motif = pmfinder.get_motif(r_l.p)
         id = int(motif.id)
 
         am_l = motif.all_members.l
         while (am_l != None):
-            mfinder.get_motif_members(am_l.p, members, mfinderi.MotifSize)
+            pmfinder.get_motif_members(am_l.p, members, mfinderi.MotifSize)
             py_members = [int(members[i]) for i in xrange(mfinderi.MotifSize)]
 
             for m in py_members:
@@ -379,7 +379,7 @@ def participation_stats(mfinderi,stoufferIDs):
 
     r_l = results.l
     while (r_l != None):
-        motif = mfinder.get_motif(r_l.p)
+        motif = pmfinder.get_motif(r_l.p)
         id = int(motif.id)
 
         for n in participation:
@@ -406,7 +406,7 @@ def motif_participation(network,
                         ):
 
     # initialize the heinous input struct
-    web = mfinder.mfinder_input()
+    web = pmfinder.mfinder_input()
 
     # setup the network info
     web.Edges, web.NumEdges, node_dict = mfinder_network_setup(network)
@@ -459,7 +459,7 @@ def print_participation(participation_stats,outFile=None,sep=" ",header=False):
 ##############################################################
 
 def role_stats(mfinderi,network,stoufferIDs,networktype):
-    results = mfinder.motif_participation(mfinderi)
+    results = pmfinder.motif_participation(mfinderi)
 
     maxed_out_member_list = False
     max_count = 0
@@ -468,7 +468,7 @@ def role_stats(mfinderi,network,stoufferIDs,networktype):
 
         r_l = results.l
         while (r_l != None):
-            motif = mfinder.get_motif(r_l.p)
+            motif = pmfinder.get_motif(r_l.p)
 
             if(int(motif.count) != motif.all_members.size):
                 maxed_out_member_list = True
@@ -479,7 +479,7 @@ def role_stats(mfinderi,network,stoufferIDs,networktype):
         if maxed_out_member_list:
             #sys.stderr.write("upping the ante bitches!\n")
             mfinderi.MaxMembersListSz = max_count + 1
-            results = mfinder.motif_participation(mfinderi)
+            results = pmfinder.motif_participation(mfinderi)
 
         else:
             break
@@ -496,14 +496,14 @@ def role_stats(mfinderi,network,stoufferIDs,networktype):
 
     roles = {}
     r_l = results.l
-    members = mfinder.intArray(mfinderi.MotifSize)
+    members = pmfinder.intArray(mfinderi.MotifSize)
     while (r_l != None):
-        motif = mfinder.get_motif(r_l.p)
+        motif = pmfinder.get_motif(r_l.p)
         id = int(motif.id)
         
         am_l = motif.all_members.l
         while (am_l != None):
-            mfinder.get_motif_members(am_l.p, members, mfinderi.MotifSize)
+            pmfinder.get_motif_members(am_l.p, members, mfinderi.MotifSize)
             py_members = [int(members[i]) for i in xrange(mfinderi.MotifSize)]
 
             for m in py_members:
@@ -567,7 +567,7 @@ def motif_roles(network,
                 ):
 
     # initialize the heinous input struct
-    web = mfinder.mfinder_input()
+    web = pmfinder.mfinder_input()
 
     # setup the network info
     web.Edges, web.NumEdges, node_dict = mfinder_network_setup(network)
