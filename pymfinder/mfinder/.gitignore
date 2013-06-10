@@ -1,5 +1,4 @@
+###################
 # Compiled source #
 ###################
 *.o
-mfinder_wrap.c
-mfinder.py
