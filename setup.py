@@ -1,9 +1,9 @@
 
-from distutils.core import setup, Extension
+from setuptools import setup, Extension, find_packages
 
-####
-# check for Python.h
-####
+#############################################################################
+### check for Python.h
+#############################################################################
 from distutils.command.config import config as _config
 
 # a faux config command that checks for the Python.h header file
@@ -28,9 +28,9 @@ class build_ext(_build_ext):
     self.run_command('config')
     _build_ext.run(self)
 
-####
-# define the C extension for the original mfinder code
-####
+#############################################################################
+### define the C extension for the original mfinder code
+#############################################################################
 mfinder = Extension('_mfinder',
                     sources=['/'.join(['pymfinder','mfinder',f]) \
                     for f in ['clustering.c',
@@ -58,9 +58,9 @@ mfinder = Extension('_mfinder',
                     extra_compile_args = ["-O3",],
                     )
 
-####
-# the pymfinder setup
-####
+#############################################################################
+#### the pymfinder setup
+#############################################################################
 setup(
     name = "pymfinder",
     version = "0.23",
@@ -68,16 +68,11 @@ setup(
     author = "Daniel B. Stouffer",
     author_email = "daniel.stouffer@canterbury.ac.nz",
     url = 'http://github.com/stoufferlab/pymfinder',
-    packages = ['pymfinder',
-                'pymfinder.mfinder',
-                'pymfinder.test',
-                'pymfinder.data',                
-                ],
-    package_data = {'pymfinder.data' : ['test.net',],
-                    },
+    packages = find_packages(exclude = 'tests'),
     ext_package = 'pymfinder.mfinder',
     ext_modules = [mfinder,],
     cmdclass={'build_ext': build_ext,
               'config': config,
-             },
+            },
+    test_suite = 'tests',
 )
