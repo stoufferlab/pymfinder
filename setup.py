@@ -73,6 +73,6 @@ setup(
     ext_modules = [mfinder,],
     cmdclass={'build_ext': build_ext,
               'config': config,
-            },
+              },
     test_suite = 'tests',
 )
