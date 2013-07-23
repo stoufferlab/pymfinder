@@ -16,4 +16,4 @@ If you receive an error about 'Permission denied' or something similar, you most
 
 	python setup.py install --user
 
-If you still cannot install pymfinder, please [Create a new issue](https://github.com/stoufferlab/pymfinder/issues/new).
+If you still cannot install pymfinder, please check [the issues page](https://github.com/stoufferlab/pymfinder/issues/) and, if your problem is listed, create a new one.
