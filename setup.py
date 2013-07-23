@@ -68,7 +68,7 @@ setup(
     author = "Daniel B. Stouffer",
     author_email = "daniel.stouffer@canterbury.ac.nz",
     url = 'http://github.com/stoufferlab/pymfinder',
-    packages = find_packages(exclude = 'tests'),
+    packages = find_packages(exclude=["*.tests", "*.tests.*", "tests.*", "tests"]),
     ext_package = 'pymfinder.mfinder',
     ext_modules = [mfinder,],
     cmdclass={'build_ext': build_ext,
