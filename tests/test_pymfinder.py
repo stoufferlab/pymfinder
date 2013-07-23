@@ -10,7 +10,7 @@ import test_results
 class pymfinderTestCase(unittest.TestCase):
     def setUp(self):
         import os
-        self.test_filename = os.path.dirname(__file__) + "/unipartite-test.net"
+        self.test_filename = os.path.dirname(__file__) + "/../pymfinder/data/unipartite-test.net"
         try:
             with open(self.test_filename) as file:
                 pass

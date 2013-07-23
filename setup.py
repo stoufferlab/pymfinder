@@ -74,5 +74,5 @@ setup(
     cmdclass={'build_ext': build_ext,
               'config': config,
               },
-    test_suite = 'tests',
+    test_suite = 'tests.test_pymfinder',
 )
