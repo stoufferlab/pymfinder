@@ -828,8 +828,8 @@ list64* motif_structure(mfinder_input mfinderi){
 
   // return the crazy results table
   // per mfinder, this depends on the size of the motifs
-  final_res_free(final_res);
-  return final_res_all;
+  final_res_free(final_res_all);
+  return final_res;
 }
 
 
