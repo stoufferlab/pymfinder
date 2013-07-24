@@ -269,21 +269,23 @@ def motif_stats(mfinderi,stoufferIDs):
     results = cmfinder.motif_structure(mfinderi)
 
     motif_stats = {}
-    motif_result = results.l
-    while (motif_result != None):
-        motif = cmfinder.get_motif_result(motif_result.p)
 
-        motif_id = int(motif.id)
-        if motif_id in motif_stats:
-            sys.stderr.write("A motif has appeared twice. How odd.\n")
-        else:
-            motif_stats[motif_id] = dict()
-            motif_stats[motif_id]['real'] = int(motif.real_count)
-            motif_stats[motif_id]['rand'] = float(motif.rand_mean)
-            motif_stats[motif_id]['srand'] = float(motif.rand_std_dev)
-            motif_stats[motif_id]['zscore'] = float(motif.real_zscore)
+    if results:
+        motif_result = results.l
+        while (motif_result != None):
+            motif = cmfinder.get_motif_result(motif_result.p)
 
-        motif_result = motif_result.next
+            motif_id = int(motif.id)
+            if motif_id in motif_stats:
+                sys.stderr.write("A motif has appeared twice. How odd.\n")
+            else:
+                motif_stats[motif_id] = dict()
+                motif_stats[motif_id]['real'] = int(motif.real_count)
+                motif_stats[motif_id]['rand'] = float(motif.rand_mean)
+                motif_stats[motif_id]['srand'] = float(motif.rand_std_dev)
+                motif_stats[motif_id]['zscore'] = float(motif.real_zscore)
+
+            motif_result = motif_result.next
 
     if stoufferIDs and mfinderi.MotifSize == 3:
         return dict([(STOUFFER_MOTIF_IDS[id],motif_stats[id]) for id in motif_stats])
