@@ -15,3 +15,5 @@ Installation should be relatively straightforward using the included `setup.py`.
 If you receive an error about 'Permission denied' or something similar, you most likely don't have permission to install pymfinder in the global Python site-packages or dist-packages directory. In that case, you can install it locally by adding the `--user` option
 
 	python setup.py install --user
+
+If you still cannot install pymfinder, please check [the issues page](https://github.com/stoufferlab/pymfinder/issues/) and, if your problem isn't listed, create a new one.
