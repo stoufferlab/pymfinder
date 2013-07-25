@@ -287,6 +287,8 @@ def motif_stats(mfinderi,stoufferIDs):
 
             motif_result = motif_result.next
 
+    cmfinder.list64_free_mem(results)
+
     if stoufferIDs and mfinderi.MotifSize == 3:
         return dict([(STOUFFER_MOTIF_IDS[id],motif_stats[id]) for id in motif_stats])
     else:
@@ -391,6 +393,8 @@ def participation_stats(mfinderi,stoufferIDs):
                 participation[n][id] = 0
 
         r_l = r_l.next
+
+    cmfinder.res_tbl_mem_free_single(results)
 
     if stoufferIDs and mfinderi.MotifSize == 3:
         for n in participation:
@@ -544,6 +548,8 @@ def role_stats(mfinderi,network,stoufferIDs,networktype):
             am_l = am_l.next
 
         r_l = r_l.next
+
+    cmfinder.res_tbl_mem_free_single(results)
 
     for n in roles:
         for r in possible_roles:
