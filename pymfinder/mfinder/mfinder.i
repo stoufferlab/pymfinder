@@ -24,6 +24,10 @@ extern list* random_network(mfinder_input mfinderi);
 extern list64* motif_structure(mfinder_input mfinderi);
 extern list64* motif_participation(mfinder_input mfinderi);
 
+extern void list_free_mem(list64 *L);
+extern void list64_free_mem(list64 *L);
+extern void res_tbl_mem_free_single(list64 *L);
+
 /************************ Stouffer Typedefs *******************************/
 
 typedef struct {
@@ -127,13 +131,11 @@ typedef struct {
       return (Motif*) p;
     }
 
-    void get_motif_members(void* p,
-			   int* vals,
-			   int mtf_sz){
+    void get_motif_members(void* p,int* vals,int mtf_sz){
       unsigned int i;
       Member* members = (Member*) p;
       for(i=0;i<mtf_sz;++i){
-	vals[i] = members[i].node;
+		vals[i] = members[i].node;
       }
     }
 

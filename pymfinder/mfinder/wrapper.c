@@ -468,7 +468,7 @@ int single_connected_component(int64 id,int mtf_sz){
     added = FALSE;
     for(i=1;i<=mtf_sz;i++)
       if(cc[i] == TRUE && checked[i] == FALSE){
-        checked[i] == TRUE;
+        checked[i] = TRUE;
         for(j=1;j<=mtf_sz;j++)
           if(MTRX(M,i,j)==1 || MTRX(M,j,i)==1)
             if(cc[j] == FALSE){
@@ -695,6 +695,7 @@ list* random_network(mfinder_input mfinderi){
 
     met_motifs_search_real(G_N,&met_res_tbl,real_vec13);
     list64_free_mem(met_res_tbl.real);
+    //res_tbl_mem_free(met_res_tbl);
 
     rc = gen_rand_network_metrop(&N,real_vec13);
     if (rc == RC_ERR) {
@@ -822,9 +823,12 @@ list64* motif_structure(mfinder_input mfinderi){
   //calculate final results
   calc_final_results(&RES_TBL, &final_res, &final_res_all, GNRL_ST.rnd_net_num);
 
-  // release memory of various objects
+  // release memory of various network objects
   free_network_mem(N);
   free(N);
+
+  // release the results table memory
+  res_tbl_mem_free(&RES_TBL);
 
   // return the crazy results table
   // per mfinder, this depends on the size of the motifs

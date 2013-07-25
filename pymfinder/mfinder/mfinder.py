@@ -111,6 +111,18 @@ motif_structure = _mfinder.motif_structure
 def motif_participation(*args):
   return _mfinder.motif_participation(*args)
 motif_participation = _mfinder.motif_participation
+
+def list_free_mem(*args):
+  return _mfinder.list_free_mem(*args)
+list_free_mem = _mfinder.list_free_mem
+
+def list64_free_mem(*args):
+  return _mfinder.list64_free_mem(*args)
+list64_free_mem = _mfinder.list64_free_mem
+
+def res_tbl_mem_free_single(*args):
+  return _mfinder.res_tbl_mem_free_single(*args)
+res_tbl_mem_free_single = _mfinder.res_tbl_mem_free_single
 class mfinder_input(_object):
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, mfinder_input, name, value)

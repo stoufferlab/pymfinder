@@ -3435,13 +3435,11 @@ SWIG_From_unsigned_SS_char  (unsigned char value)
       return (Motif*) p;
     }
 
-    void get_motif_members(void* p,
-			   int* vals,
-			   int mtf_sz){
+    void get_motif_members(void* p,int* vals,int mtf_sz){
       unsigned int i;
       Member* members = (Member*) p;
       for(i=0;i<mtf_sz;++i){
-	vals[i] = members[i].node;
+		vals[i] = members[i].node;
       }
     }
 
@@ -3744,6 +3742,69 @@ SWIGINTERN PyObject *_wrap_motif_participation(PyObject *SWIGUNUSEDPARM(self), P
   }
   result = (list64 *)motif_participation(arg1);
   resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_list64, 0 |  0 );
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_list_free_mem(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  list64 *arg1 = (list64 *) 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject * obj0 = 0 ;
+  
+  if (!PyArg_ParseTuple(args,(char *)"O:list_free_mem",&obj0)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_list64, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "list_free_mem" "', argument " "1"" of type '" "list64 *""'"); 
+  }
+  arg1 = (list64 *)(argp1);
+  list_free_mem(arg1);
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_list64_free_mem(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  list64 *arg1 = (list64 *) 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject * obj0 = 0 ;
+  
+  if (!PyArg_ParseTuple(args,(char *)"O:list64_free_mem",&obj0)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_list64, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "list64_free_mem" "', argument " "1"" of type '" "list64 *""'"); 
+  }
+  arg1 = (list64 *)(argp1);
+  list64_free_mem(arg1);
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_res_tbl_mem_free_single(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  list64 *arg1 = (list64 *) 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject * obj0 = 0 ;
+  
+  if (!PyArg_ParseTuple(args,(char *)"O:res_tbl_mem_free_single",&obj0)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_list64, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "res_tbl_mem_free_single" "', argument " "1"" of type '" "list64 *""'"); 
+  }
+  arg1 = (list64 *)(argp1);
+  res_tbl_mem_free_single(arg1);
+  resultobj = SWIG_Py_Void();
   return resultobj;
 fail:
   return NULL;
@@ -6835,6 +6896,9 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"random_network", _wrap_random_network, METH_VARARGS, NULL},
 	 { (char *)"motif_structure", _wrap_motif_structure, METH_VARARGS, NULL},
 	 { (char *)"motif_participation", _wrap_motif_participation, METH_VARARGS, NULL},
+	 { (char *)"list_free_mem", _wrap_list_free_mem, METH_VARARGS, NULL},
+	 { (char *)"list64_free_mem", _wrap_list64_free_mem, METH_VARARGS, NULL},
+	 { (char *)"res_tbl_mem_free_single", _wrap_res_tbl_mem_free_single, METH_VARARGS, NULL},
 	 { (char *)"mfinder_input_Filename_set", _wrap_mfinder_input_Filename_set, METH_VARARGS, NULL},
 	 { (char *)"mfinder_input_Filename_get", _wrap_mfinder_input_Filename_get, METH_VARARGS, NULL},
 	 { (char *)"mfinder_input_Edges_set", _wrap_mfinder_input_Edges_set, METH_VARARGS, NULL},
