@@ -674,10 +674,11 @@ int
 calc_final_results(Res_tbl*res_tbl, list64 **final_res_p, list64 **final_res_all_p, int rnd_net_num)
 {
 	int rc=RC_OK;
-	list64_item *l_id_res,*l_tmp;
+	list64_item *l_id_res,*l_tmp,*l_mtf;
+	Motif *mtf;
 	Motif_res *mtf_res;
-	list64 *final_res, *all_ids_res;
-	list64 *all_pos_ids;
+	list64 *final_res, *all_ids_res, *obs_ids_res;
+	list64 *all_pos_ids,*all_obs_ids;
 	list64* iso_list;
 	int64 id,rep_id,mask_bit,mask_r,mask_c;
 	int i,j,illegal_id=FALSE;
@@ -719,7 +720,7 @@ calc_final_results(Res_tbl*res_tbl, list64 **final_res_p, list64 **final_res_all
 	*final_res_p=final_res;
 
 	//if motif size is larger than 4 then skip this (takes too much time)
-	if (GNRL_ST.mtf_sz<=4){
+	if (GNRL_ST.mtf_sz<5){
 		//generate a list with representatives for all possible motifs id for
 		//the motif size and then pass through the list and get all the results
 		list64_init(&all_pos_ids);
@@ -814,9 +815,66 @@ calc_final_results(Res_tbl*res_tbl, list64 **final_res_p, list64 **final_res_all
 		}
 
 		*final_res_all_p=all_ids_res;
-	}
-	if (GNRL_ST.mtf_sz<=4)
 		list64_free_mem(all_pos_ids);
+	}else{
+		// a list that will contain all possible motifs id from the real AND random networks
+		list64_init(&all_obs_ids);
+		
+		// add all ids encountered in the real network
+		for(l_id_res=list64_get_next(res_tbl->real,NULL); l_id_res !=NULL; l_id_res=list64_get_next(res_tbl->real,l_id_res)) {
+			id=(int64)l_id_res->val;
+			list64_insert(all_obs_ids,(int64)id,NULL);
+		}
+
+		// add all ids encountered in the randomized networks
+		for(i=0;i<GNRL_ST.rnd_net_num;++i){
+			for(l_mtf=list64_get_next(res_tbl->rand_arr[i],NULL); l_mtf != NULL; l_mtf=list64_get_next(res_tbl->rand_arr[i],l_mtf)){
+				mtf=(Motif*)l_mtf->p;
+				id=(int64)mtf->id;
+			
+				if(list64_get(all_obs_ids,(int64)id)==NULL){
+					list64_insert(all_obs_ids,(int64)id,NULL);
+				}
+			}
+		}
+
+		//pass through all possible motif ids and collect the results in all_ids_res
+		list64_init(&all_ids_res);
+		for(l_tmp=list64_get_next(all_obs_ids,NULL); l_tmp != NULL; l_tmp=list64_get_next(all_obs_ids,l_tmp)) {
+			rep_id=l_tmp->val;
+			mtf_res=(Motif_res*)calloc(1,sizeof(Motif_res));
+			if(GNRL_ST.out_rand_mat_flag)
+				mtf_res->all_rand_counts=(int*)calloc(GNRL_ST.rnd_net_num+1,sizeof(int));
+		
+			mtf_res->id=(int64)rep_id;
+			//if found in real network then get its score
+			//else the score is zero
+			if( (l_id_res=list64_get(res_tbl->real,(int64)rep_id)) != NULL) {
+				mtf_res->real_count=(double)((Motif*)(l_id_res->p))->count;
+				mtf_res->hits_num=(int)((Motif*)(l_id_res->p))->count;
+				mtf_res->conc_real=((Motif*)(l_id_res->p))->conc;
+				mtf_res->hits_num=((Motif*)(l_id_res->p))->hits;
+				mtf_res->all_members=((Motif*)(l_id_res->p))->all_members;
+				mtf_res->unique_appear=((Motif*)(l_id_res->p))->members->size;
+				mtf_res->conv_grade=((Motif*)(l_id_res->p))->conv_grade;
+
+			}else{
+				mtf_res->real_count=0;
+				mtf_res->conc_real=0;
+			}
+
+			//full set motif results
+			calc_deviation(mtf_res,&RES_TBL,rnd_net_num);
+			calc_pval(mtf_res,&RES_TBL,rnd_net_num);
+			calc_zscore(mtf_res);
+
+			list64_insert(all_ids_res,(int64)mtf_res->id,(void*)mtf_res);
+		}
+
+		*final_res_all_p=all_ids_res;
+		list64_free_mem(all_obs_ids);
+	}
+
 	//calculate roles final results
 	//currently only ofr motifs size 3
 	if(GNRL_ST.calc_roles && GNRL_ST.mtf_sz==3 ) {
