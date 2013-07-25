@@ -832,8 +832,8 @@ list64* motif_structure(mfinder_input mfinderi){
     final_res_free(final_res);
     return final_res_all;
   }else{
-    final_res_free(final_res_all);
-    return final_res;
+    final_res_free(final_res);
+    return final_res_all;
   }
 }
 
