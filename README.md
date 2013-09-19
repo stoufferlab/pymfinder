@@ -17,3 +17,7 @@ If you receive an error about 'Permission denied' or something similar, you most
 	python setup.py install --user
 
 If you still cannot install pymfinder, please check [the issues page](https://github.com/stoufferlab/pymfinder/issues/) and, if your problem isn't listed, create a new one.
+
+Assuming that the package installs properly, it is strongly recommended that you run the test suite to make sure that nothing fishy is going on. Doing so is as simple as running
+
+	python setup.py test
