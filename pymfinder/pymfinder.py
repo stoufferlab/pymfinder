@@ -490,7 +490,7 @@ def role_stats(mfinderi,network,stoufferIDs,networktype):
         else:
             break
 
-    _network = [(i,j) for i,j,k in network]
+    _network = set([(i,j) for i,j,k in network])
 
     possible_roles = []
     if networktype == "unipartite":
@@ -511,13 +511,14 @@ def role_stats(mfinderi,network,stoufferIDs,networktype):
         while (am_l != None):
             cmfinder.get_motif_members(am_l.p, members, mfinderi.MotifSize)
             py_members = [int(members[i]) for i in xrange(mfinderi.MotifSize)]
+            py_motif = set([(i,j) for i,j in _network if (i in py_members and j in py_members)])
 
             for m in py_members:
                 if m not in roles:
                     roles[m] = {}
 
-                npred  = sum([(othernode,m) in _network for othernode in py_members if othernode != m])
-                nprey = sum([(m,othernode) in _network for othernode in py_members if othernode != m])
+                npred  = sum([(othernode,m) in py_motif for othernode in py_members if othernode != m])
+                nprey = sum([(m,othernode) in py_motif for othernode in py_members if othernode != m])
 
                 key = (id, npred, nprey)
 
@@ -525,13 +526,13 @@ def role_stats(mfinderi,network,stoufferIDs,networktype):
                 # we will add the degrees of the nodes it interacts with (its neighbors)
                 if key not in possible_roles:
                     if npred > 0:
-                        connected_to = [othernode for othernode in py_members if othernode != m and (othernode,m) in _network]
-                        npreys = [sum([(i,j) in _network for j in py_members if j != i]) for i in connected_to]
+                        connected_to = set([othernode for othernode in py_members if othernode != m and (othernode,m) in py_motif])
+                        npreys = [sum([(i,j) in py_motif for j in py_members if j != i]) for i in connected_to]
                         npreys.sort()
                         key = tuple(list(key) + [tuple(npreys)])
                     else:
-                        connected_to = [othernode for othernode in py_members if othernode != m and (m,othernode) in _network]
-                        npreds = [sum([(j,i) in _network for j in py_members if j != i]) for i in connected_to]
+                        connected_to = set([othernode for othernode in py_members if othernode != m and (m,othernode) in py_motif])
+                        npreds = [sum([(j,i) in py_motif for j in py_members if j != i]) for i in connected_to]
                         npreds.sort()
                         key = tuple(list(key) + [tuple(npreds)])
 
