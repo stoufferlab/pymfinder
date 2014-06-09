@@ -2,122 +2,7 @@
 
 import mfinder.mfinder as mfinder
 import sys
-
-##############################################################
-##############################################################
-# USEFUL GLOBAL VARIABLES
-##############################################################
-##############################################################
-
-STOUFFER_MOTIF_IDS = {12:  'S1',
-                      38:  'S2',
-                      98:  'S3',
-                      36:  'S4',
-                      6:   'S5',
-                      46:  'D1',
-                      108: 'D2',
-                      14:  'D3',
-                      74:  'D4',
-                      102: 'D5',
-                      238: 'D6',
-                      110: 'D7',
-                      78:  'D8',
-                      }
-
-#key = size:(motif_id, (npred,nprey))
-UNIPARTITE_ROLES = {2:[(2, [(0, 1),
-                            (1, 0),
-                            ]),
-                       (6, [(1, 1),
-                            ]),
-                       ],
-
-                    3:[(12,  [(0, 1),
-                              (1, 1),
-                              (1, 0),
-                              ]),
-                       (38,  [(0, 2),
-                              (1, 1),
-                              (2, 0),
-                              ]),
-                       (98,  [(1, 1),]),
-                       (36,  [(0, 1),
-                              (2, 0),
-                              ]),
-                       (6,   [(0, 2),
-                              (1, 0),
-                              ]),
-                       (46,  [(1, 2),
-                              (2, 0),
-                              ]),
-                       (108, [(0, 2),
-                              (2, 1),
-                              ]),
-                       (14,  [(1, 2),
-                              (1, 1),
-                              (1, 0),
-                              ]),
-                       (74,  [(0, 1),
-                              (1, 1),
-                              (2, 1),
-                              ]),
-                       (102, [(1, 1),
-                              (2, 1),
-                              (1, 2),]),
-                       (238, [(2, 2),]),
-                       (110, [(1, 2),
-                              (2, 1),
-                              (2, 2),]),
-                       (78,  [(1, 1),
-                              (2, 2),]),
-                       ],
-                    }
-
-#key as for positions but with two species
-UNIPARTITE_LINKS = {2:[(2,  [((0,1),(1,0)),]), #Tuples are (eaten by,eats) ((eater),(eaten)))
-                       (6,  [((1,1),(1,1)),]),
-                        ],
-
-                    3:[(12,  [((0, 1),(1, 1)), #1
-                              ((1, 1),(1, 0)), #2
-                              ]),
-                       (38,  [((0, 2),(1, 1)), #3
-                              ((1, 1),(2, 0)), #4
-                              ((0, 2),(2, 0)), #5
-                              ]),
-                       (98,  [((1, 1),(1, 1)), #6
-                              ]),
-                       (36,  [((0, 1),(2, 0)), #7
-                              ]),
-                       (6,   [((0, 2),(1, 0)), #8
-                              ]),
-                       (46,  [((1, 2),(2, 0)), #9
-                              ((1, 2),(1, 2)), #10
-                              ]),
-                       (108, [((0, 2),(2, 1)), #11
-                              ((2, 1),(2, 1)), #12
-                              ]),
-                       (14,  [((1, 2),(1, 1)), #13
-                              ((1, 2),(1, 0)), #14
-                              ]),
-                       (74,  [((0, 1),(2, 1)), #15
-                              ((1, 1),(2, 1)), #16
-                              ]),
-                       (102, [((1, 1),(2, 1)), #17
-                              ((1, 2),(2, 1)), #18
-                              ((1, 2),(1, 1)), #19
-                              ]),
-                       (238, [((2, 2),(2, 2)), #20
-                              ]),
-                       (110, [((1, 2),(2, 1)), #21
-                              ((1, 2),(2, 2)), #22
-                              ((2, 2),(2, 1)), #23
-                              ]),
-                       (78,  [((1, 1),(2, 2)), #24
-                              ]),
-                       ],
-                    }
-
+from roles import * #Now storing motif ID's, roles offsite.
 
 ##############################################################
 ##############################################################
@@ -725,7 +610,7 @@ def print_link_participation(link_participation_stats,outFile=None,sep=" ",heade
 ##############################################################
 ##############################################################
 
-def role_stats(mfinderi,network,stoufferIDs):
+def role_stats(mfinderi,network,stoufferIDs,networktype):
     results = mfinder.motif_participation(mfinderi)
 
     maxed_out_member_list = False
@@ -753,9 +638,13 @@ def role_stats(mfinderi,network,stoufferIDs):
 
     _network = [(i,j) for i,j,k in network]
 
-    possible_roles = []
-    for motif,roles in UNIPARTITE_ROLES[mfinderi.MotifSize]:
-        possible_roles += [tuple([motif] + list(role)) for role in roles]
+    possible_roles = []    
+    if networktype == "unipartite":
+      for motif,roles in UNIPARTITE_ROLES[mfinderi.MotifSize]:
+          possible_roles += [tuple([motif] + list(role)) for role in roles]
+    elif networktype == "bipartite":
+      for motif,roles in BIPARTITE_ROLES[mfinderi.MotifSize]:
+          possible_roles += [tuple([motif] + list(role)) for role in roles]
 
     roles = {}
     r_l = results.l
@@ -763,7 +652,11 @@ def role_stats(mfinderi,network,stoufferIDs):
     while (r_l != None):
         motif = mfinder.get_motif(r_l.p)
         id = int(motif.id)
-        mindex = [i for i,j in UNIPARTITE_ROLES[mfinderi.MotifSize]].index(id)
+
+        if networktype == "unipartite":
+          mindex = [i for i,j in UNIPARTITE_ROLES[mfinderi.MotifSize]].index(id)
+        elif networktype == "bipartite":
+          mindex = [i for i,j in BIPARTITE_ROLES[mfinderi.MotifSize]].index(id)
         
         am_l = motif.all_members.l
         while (am_l != None):
@@ -819,8 +712,10 @@ def motif_roles(network,
                 randomize = False,
                 usemetropolis = False,
                 stoufferIDs = False,
+                networktype="unipartite"
                 ):
 
+    print networktype
     # initialize the heinous input struct
     web = mfinder.mfinder_input()
 
@@ -843,7 +738,7 @@ def motif_roles(network,
             web.UseMetropolis = 1
     
     network, node_dict = human_network_setup(network)    
-    r_stats = role_stats(web,network,stoufferIDs)
+    r_stats = role_stats(web,network,stoufferIDs,networktype)
 
     try:
         return decode_stats(r_stats,node_dict)
