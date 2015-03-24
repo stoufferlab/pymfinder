@@ -3,6 +3,7 @@ import mfinder.mfinder as cmfinder
 import sys
 
 from roles import *
+from datatypes import *
 
 ##############################################################
 ##############################################################
@@ -102,11 +103,11 @@ def human_network_setup(network):
         sys.exit()
 
 # if we've relabeled the nodes, make sure the output corresponds to the input labels
-# if we've relabeled the nodes, make sure the output corresponds to the input labels
 def decode_net(edges,node_dictionary):
     reverse_dictionary = dict([(j,i) for i,j in node_dictionary.items()])
     return [(reverse_dictionary[i],reverse_dictionary[j],k) for i,j,k in edges]
 
+# if we've relabeled the nodes, make sure the output corresponds to the input labels
 def decode_stats(stats,node_dictionary):
     reverse_dictionary = dict([(j,i) for i,j in node_dictionary.items()])
     return dict([(reverse_dictionary[i],j) for i,j in stats.items()])
@@ -117,8 +118,7 @@ def decode_stats(stats,node_dictionary):
 ##############################################################
 ##############################################################
 
-def list_motifs(motifsize,
-                ):
+def list_motifs(motifsize):
 
     motifs = cmfinder.list_motifs(motifsize)
 
@@ -268,7 +268,7 @@ def motif_structure(network,
 def motif_stats(mfinderi,stoufferIDs):
     results = cmfinder.motif_structure(mfinderi)
 
-    motif_stats = {}
+    motif_stats = MotifStats()
 
     if results:
         motif_result = results.l
@@ -276,23 +276,19 @@ def motif_stats(mfinderi,stoufferIDs):
             motif = cmfinder.get_motif_result(motif_result.p)
 
             motif_id = int(motif.id)
-            if motif_id in motif_stats:
-                sys.stderr.write("A motif has appeared twice. How odd.\n")
-            else:
-                motif_stats[motif_id] = dict()
-                motif_stats[motif_id]['real'] = int(motif.real_count)
-                motif_stats[motif_id]['rand'] = float(motif.rand_mean)
-                motif_stats[motif_id]['srand'] = float(motif.rand_std_dev)
-                motif_stats[motif_id]['zscore'] = float(motif.real_zscore)
+            
+            motif_stats.add_motif(motif_id)
+            motif_stats.motifs[motif_id].real = int(motif.real_count)
+            motif_stats.motifs[motif_id].random_m = float(motif.rand_mean)
+            motif_stats.motifs[motif_id].random_sd = float(motif.rand_std_dev)
+            motif_stats.motifs[motif_id].real_z = float(motif.real_zscore)
 
             motif_result = motif_result.next
 
     cmfinder.list64_free_mem(results)
 
-    if stoufferIDs and mfinderi.MotifSize == 3:
-        return dict([(STOUFFER_MOTIF_IDS[id],motif_stats[id]) for id in motif_stats])
-    else:
-        return motif_stats
+    if stoufferIDs:
+        motif_stats.use_stouffer_IDs()
 
     return motif_stats
 
@@ -310,14 +306,7 @@ def print_motif_structure(motif_stats,outFile=None,sep=" ",header=False):
                            'zscore',])
         fstream.write(output + '\n')
 
-    for m in sorted(motif_stats.keys()):
-        output = sep.join(["%s" % str(m),
-                           "%i" % motif_stats[m]['real'],
-                           "%.3f" % motif_stats[m]['rand'],
-                           "%.3f" % motif_stats[m]['srand'],
-                           "%.3f" % motif_stats[m]['zscore'],
-                           ])
-        fstream.write(output + '\n')
+    fstream.write(str(motif_stats) + '\n')
 
     if outFile:
         fstream.close()
