@@ -21,7 +21,7 @@ class pymfinderTestCase(unittest.TestCase):
 
     def test_motif_structure(self):
         result = motif_structure(self.test_filename,motifsize=3,nrandomizations=0)
-        self.assertEqual(result, test_results.motif_structure)
+        self.assertEqual(str(result), test_results.motif_structure)
     
     def test_motif_participation(self):
         result = motif_participation(self.test_filename,motifsize=3,stoufferIDs=True)
