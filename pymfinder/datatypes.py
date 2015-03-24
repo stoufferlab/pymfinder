@@ -49,6 +49,7 @@ class MotifStats(object):
         else:
             pass
 
+    # DEBUG: it would be nice to be able to turn the header on and off
     def __str__(self):
         # set up a header
         output = " ".join(['motif',
