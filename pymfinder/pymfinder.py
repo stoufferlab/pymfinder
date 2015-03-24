@@ -596,7 +596,11 @@ def motif_roles(network,
         else:
             web.UseMetropolis = 1
     
-    network, node_dict = human_network_setup(network)    
+    # turn the weighted network into just a list of links
+    # NOTE: the node_dict is not required since we've already relabeled nodes above
+    network, _unnecessary_node_dict = human_network_setup(network)
+
+    # determine all nodes' role statistics
     r_stats = role_stats(web,network,stoufferIDs,networktype)
 
     try:
