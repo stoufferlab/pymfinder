@@ -552,7 +552,12 @@ def role_stats(mfinderi,network,stoufferIDs,networktype):
 
     cmfinder.res_tbl_mem_free_single(results)
 
-    for n in roles:
+    nmax=max([max(k[0],k[1]) for k in _network])
+    for n in range(1,nmax+1):
+        try:
+            x = roles[n]
+        except KeyError:
+            roles[n] = {}
         for r in possible_roles:
             try:
                 x = roles[n][r]
