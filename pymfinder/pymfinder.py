@@ -490,8 +490,6 @@ def role_stats(mfinderi,network,stoufferIDs,networktype):
         else:
             break
 
-    _network = set([(i,j) for i,j,k in network])
-
     possible_roles = []
     if networktype == "unipartite":
       for motif,roles in UNIPARTITE_ROLES[mfinderi.MotifSize]:
@@ -500,8 +498,13 @@ def role_stats(mfinderi,network,stoufferIDs,networktype):
       for motif,roles in BIPARTITE_ROLES[mfinderi.MotifSize]:
           possible_roles += [tuple([motif] + list(role)) for role in roles]
 
+    #Inicialize a dictionary to store the motif-role profile of every species
+    #_network is a set containing all the interactions
     roles = {}
+    _network = set([])
+
     for i,j,k in network:
+	_network.add((i,j))
         try:
             x = roles[i]
         except KeyError:
@@ -510,6 +513,7 @@ def role_stats(mfinderi,network,stoufferIDs,networktype):
             x = roles[j]
         except KeyError:
             roles[j] = {}
+
     
     r_l = results.l
     members = cmfinder.intArray(mfinderi.MotifSize)
@@ -524,8 +528,6 @@ def role_stats(mfinderi,network,stoufferIDs,networktype):
             py_motif = set([(i,j) for i,j in _network if (i in py_members and j in py_members)])
 
             for m in py_members:
-                if m not in roles:
-                    roles[m] = {}
 
                 npred  = sum([(othernode,m) in py_motif for othernode in py_members if othernode != m])
                 nprey = sum([(m,othernode) in py_motif for othernode in py_members if othernode != m])
@@ -562,7 +564,6 @@ def role_stats(mfinderi,network,stoufferIDs,networktype):
 
     cmfinder.res_tbl_mem_free_single(results)
 
-    nmax=max([max(k[0],k[1]) for k in _network])
     for n in roles:
         for r in possible_roles:
             try:
