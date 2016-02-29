@@ -562,7 +562,6 @@ def role_stats(mfinderi,network,stoufferIDs,networktype):
 
     cmfinder.res_tbl_mem_free_single(results)
 
-    nmax=max([max(k[0],k[1]) for k in _network])
     for n in roles:
         for r in possible_roles:
             try:
