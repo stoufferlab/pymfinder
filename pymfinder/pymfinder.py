@@ -501,6 +501,16 @@ def role_stats(mfinderi,network,stoufferIDs,networktype):
           possible_roles += [tuple([motif] + list(role)) for role in roles]
 
     roles = {}
+    for i,j,k in network:
+        try:
+            x = roles[i]
+        except KeyError:
+            roles[i] = {}
+        try:
+            x = roles[j]
+        except KeyError:
+            roles[j] = {}
+    
     r_l = results.l
     members = cmfinder.intArray(mfinderi.MotifSize)
     while (r_l != None):
@@ -553,11 +563,7 @@ def role_stats(mfinderi,network,stoufferIDs,networktype):
     cmfinder.res_tbl_mem_free_single(results)
 
     nmax=max([max(k[0],k[1]) for k in _network])
-    for n in range(1,nmax+1):
-        try:
-            x = roles[n]
-        except KeyError:
-            roles[n] = {}
+    for n in roles:
         for r in possible_roles:
             try:
                 x = roles[n][r]
