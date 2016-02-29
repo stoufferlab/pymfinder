@@ -501,6 +501,16 @@ def role_stats(mfinderi,network,stoufferIDs,networktype):
           possible_roles += [tuple([motif] + list(role)) for role in roles]
 
     roles = {}
+    for i,j,k in network:
+        try:
+            x = roles[i]
+        except KeyError:
+            roles[i] = {}
+        try:
+            x = roles[j]
+        except KeyError:
+            roles[j] = {}
+    
     r_l = results.l
     members = cmfinder.intArray(mfinderi.MotifSize)
     while (r_l != None):
