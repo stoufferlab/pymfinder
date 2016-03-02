@@ -47,7 +47,7 @@ class pymfinderTestCase(unittest.TestCase):
 		result = motif_roles(self.test_filename2[i], motifsize=i+2, networktype = "bipartite",)
 		all_roles = result[result.keys()[0]].keys()
 		roles=[[result[n][r] for r in all_roles] for n in result]
-		check_columns=sum([ sum(x) for x in zip(*roles)])==len(result)
+		check_columns=any(v==0 for v in [ sum(x) for x in zip(*roles)])==False
 		check_rows=[sum(x) for x in roles]==[1]*len(result)
         	self.assertTrue(check_columns and check_rows)
 
