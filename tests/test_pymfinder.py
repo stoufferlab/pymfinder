@@ -38,7 +38,7 @@ class pymfinderTestCase(unittest.TestCase):
         result = motif_participation(self.test_filename1,motifsize=3,stoufferIDs=True)
         self.assertEqual(result, test_results.motif_participation)
 
-    def test_motif_roles(self):
+    def test_unipartite_motif_roles(self):
         result = motif_roles(self.test_filename1,motifsize=3,stoufferIDs=True)
         self.assertEqual(result, test_results.motif_roles)
 
