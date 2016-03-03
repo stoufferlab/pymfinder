@@ -27,7 +27,7 @@ class pymfinderTestCase(unittest.TestCase):
 		        pass
 		except IOError:
 		    import sys
-		    sys.stderr.write("Cannot find the test network 'bipartite-"+str(x)+"-test.net'.\n")
+		    sys.stderr.write("Cannot find the test network 'bipartite-"+str(x+2)+"-test.net'.\n")
 		    sys.exit(1)
 
     def test_motif_structure(self):
