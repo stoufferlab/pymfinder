@@ -31,7 +31,7 @@ def relabel_nodes(links):
     for i in range(len(links)):
         try:
             s,t,w = links[i]
-            w = int(w)
+            w = float(w)
         except ValueError:
             s,t = links[i]
             w = 1
@@ -60,7 +60,7 @@ def gen_mfinder_network(links):
     for i in range(len(links)):
         try:
             s,t,w = links[i]
-            w = int(w)
+            w = int(round(w))
         except ValueError:
             s,t = links[i]
             w = 1
@@ -79,29 +79,22 @@ def mfinder_network_setup(network):
         network = read_links(network)
         network, node_dict = relabel_nodes(network)
         edges, numedges = gen_mfinder_network(network)
-        return edges, numedges, node_dict
+        return network, edges, numedges, node_dict
     elif type(network) == type([1,2,3]):
         network, node_dict = relabel_nodes(network)
         edges, numedges = gen_mfinder_network(network)
-        return edges, numedges, node_dict
+        return network, edges, numedges, node_dict
     else:
         sys.stderr.write("Uncle Sam frowns upon tax cheats.\n")
         sys.exit()
 
-# turn an mfinder-style network into a human-intelligible one
-def human_network_setup(network):
-    if type(network) == type("hello world"):
-        # DEBUG: if we want to use a filename we need to run a check here to make sure that the node labels are integers and that there are weights
-        # web.Filename = network
-        network = read_links(network)
-        return relabel_nodes(network)
-    elif type(network) == type([1,2,3]):
-        return relabel_nodes(network)
-    else:
-        sys.stderr.write("Whatcha talkin' 'bout Willis?\n")
-        sys.exit()
+# DEBUG: This is a function that is not really necessary because the C code should provide the adjacency
+def adjacency(links, size):
+    adj=[[0.0 for x in range(size)] for y in range(size)]
+    for i in links:
+        adj[i[0]-1][i[1]-1]=i[2]
+    return adj
 
-# if we've relabeled the nodes, make sure the output corresponds to the input labels
 # if we've relabeled the nodes, make sure the output corresponds to the input labels
 def decode_net(edges,node_dictionary):
     reverse_dictionary = dict([(j,i) for i,j in node_dictionary.items()])
@@ -175,7 +168,7 @@ def random_network(network,
     web = cmfinder.mfinder_input()
 
     # setup the network info
-    web.Edges, web.NumEdges, node_dict = mfinder_network_setup(network)
+    network, web.Edges, web.NumEdges, node_dict = mfinder_network_setup(network)
 
     # parameterize the analysis
     if not usemetropolis:
@@ -247,13 +240,18 @@ def motif_structure(network,
                     nrandomizations = 0,
                     usemetropolis = False,
                     stoufferIDs = None,
+                    weighted = False,
                     ):
+
+    if weighted and nrandomizations > 0:
+        sys.stderr.write("Sorry, randomizations for weighted networks aren't implemented yet.\n")
+        sys.exit()
 
     # initialize the heinous input struct
     web = cmfinder.mfinder_input()
 
     # setup the network info
-    web.Edges, web.NumEdges, node_dict = mfinder_network_setup(network)
+    network, web.Edges, web.NumEdges, node_dict = mfinder_network_setup(network)
 
     # parameterize the analysis
     web.MotifSize = motifsize
@@ -263,7 +261,12 @@ def motif_structure(network,
     else:
         web.UseMetropolis = 1
 
-    return motif_stats(web,stoufferIDs)
+    # determine all nodes' role statistics
+    if weighted:
+        adj = adjacency(network, len(node_dict))
+        return weighted_motif_stats(web,network,stoufferIDs, adj)
+    else:
+        return motif_stats(web,stoufferIDs)
         
 def motif_stats(mfinderi,stoufferIDs):
     results = cmfinder.motif_structure(mfinderi)
@@ -409,13 +412,14 @@ def motif_participation(network,
                         randomize = False,
                         usemetropolis = False,
                         stoufferIDs = False,
+			weighted = False,
                         ):
 
     # initialize the heinous input struct
     web = cmfinder.mfinder_input()
 
     # setup the network info
-    web.Edges, web.NumEdges, node_dict = mfinder_network_setup(network)
+    network, web.Edges, web.NumEdges, node_dict = mfinder_network_setup(network)
 
     # parameterize the analysis
     web.MotifSize = motifsize
@@ -432,7 +436,11 @@ def motif_participation(network,
         else:
             web.UseMetropolis = 1
         
-    p_stats = participation_stats(web,stoufferIDs)
+    if weighted:
+        adj = adjacency(network, len(node_dict))
+        p_stats = weighted_participation_stats(web, network, stoufferIDs, adj)
+    else:
+        p_stats = participation_stats(web,stoufferIDs)
 
     try:
         return decode_stats(p_stats,node_dict)
@@ -585,13 +593,14 @@ def motif_roles(network,
                 usemetropolis = False,
                 stoufferIDs = False,
                 networktype = "unipartite",
+                weighted = False,
                 ):
 
     # initialize the heinous input struct
     web = cmfinder.mfinder_input()
 
     # setup the network info
-    web.Edges, web.NumEdges, node_dict = mfinder_network_setup(network)
+    network, web.Edges, web.NumEdges, node_dict = mfinder_network_setup(network)
 
     # parameterize the analysis
     web.MotifSize = motifsize
@@ -607,13 +616,13 @@ def motif_roles(network,
             web.UseMetropolis = 0
         else:
             web.UseMetropolis = 1
-    
-    # turn the weighted network into just a list of links
-    # NOTE: the node_dict is not required since we've already relabeled nodes above
-    network, _unnecessary_node_dict = human_network_setup(network)
 
     # determine all nodes' role statistics
-    r_stats = role_stats(web,network,stoufferIDs,networktype)
+    if weighted:
+        adj = adjacency(network, len(node_dict))
+        r_stats = weighted_role_stats(web,network,stoufferIDs,networktype, adj)
+    else:
+        r_stats = role_stats(web,network,stoufferIDs,networktype)
 
     try:
         return decode_stats(r_stats,node_dict)
@@ -649,6 +658,356 @@ def print_roles(role_stats,outFile=None,sep=" ",header=False):
         fstream.close()
 
     return
+
+##############################################################
+##############################################################
+# WEIGHTED MOTIFS
+##############################################################
+##############################################################
+
+def weighted_motif_stats(mfinderi,network,stoufferIDs, adj):
+
+    results = cmfinder.motif_participation(mfinderi)
+
+    maxed_out_member_list = False
+    max_count = 0
+    while True:
+        maxed_out_member_list = False
+
+        r_l = results.l
+        while (r_l != None):
+            motif = cmfinder.get_motif(r_l.p)
+
+            if(int(motif.count) != motif.all_members.size):
+                maxed_out_member_list = True
+                max_count = max(max_count, int(motif.count))
+
+            r_l = r_l.next
+
+        if maxed_out_member_list:
+            #sys.stderr.write("upping the ante bitches!\n")
+            mfinderi.MaxMembersListSz = max_count + 1
+            results = cmfinder.motif_participation(mfinderi)
+
+        else:
+            break
+
+    possible_motifs = []
+    for motif,roles in UNIPARTITE_ROLES[mfinderi.MotifSize]:
+        possible_motifs += [motif]
+
+    _network = set([(i,j) for i,j,k in network])
+
+    participation = {}
+    r_l = results.l
+    members = cmfinder.intArray(mfinderi.MotifSize)
+    while (r_l != None):
+        motif = cmfinder.get_motif(r_l.p)
+        id = int(motif.id)
+
+        am_l = motif.all_members.l
+        while (am_l != None):
+            cmfinder.get_motif_members(am_l.p, members, mfinderi.MotifSize)
+            py_members = [int(members[i]) for i in xrange(mfinderi.MotifSize)]
+            py_motif = set([(i,j) for i,j in _network if (i in py_members and j in py_members)])
+            weight = sum([adj[m[0]-1][m[1]-1] for m in py_motif])/float(len(py_motif))
+
+            try:
+                participation[id] += weight
+            except KeyError:
+                participation[id] = weight
+
+            am_l = am_l.next
+
+        r_l = r_l.next
+
+
+    for id in possible_motifs:
+        try:
+            x = participation[id]
+        except KeyError:
+            participation[id] = 0
+
+
+    cmfinder.res_tbl_mem_free_single(results)
+
+    return participation
+
+
+def weighted_participation_stats(mfinderi, network, stoufferIDs, adj):
+    results = cmfinder.motif_participation(mfinderi)
+
+    maxed_out_member_list = False
+    max_count = 0
+    while True:
+        maxed_out_member_list = False
+
+        r_l = results.l
+        while (r_l != None):
+            motif = cmfinder.get_motif(r_l.p)
+
+            if(int(motif.count) != motif.all_members.size):
+                maxed_out_member_list = True
+                max_count = max(max_count, int(motif.count))
+
+            r_l = r_l.next
+
+        if maxed_out_member_list:
+            #sys.stderr.write("upping the ante bitches!\n")
+            mfinderi.MaxMembersListSz = max_count + 1
+            results = cmfinder.motif_participation(mfinderi)
+
+        else:
+            break
+
+    _network = set([(i,j) for i,j,k in network])
+
+    participation = {}
+    r_l = results.l
+    members = cmfinder.intArray(mfinderi.MotifSize)
+    while (r_l != None):
+        motif = cmfinder.get_motif(r_l.p)
+        id = int(motif.id)
+
+        am_l = motif.all_members.l
+        while (am_l != None):
+            cmfinder.get_motif_members(am_l.p, members, mfinderi.MotifSize)
+            py_members = [int(members[i]) for i in xrange(mfinderi.MotifSize)]
+            py_motif = set([(i,j) for i,j in _network if (i in py_members and j in py_members)])
+            normalization = 0
+
+            #Silly loop that I'm sure I could integrate to the following one...
+            for m in py_members:
+                contribution=0
+                npred=0
+                nprey=0
+                for othernode in py_members:
+                    if othernode != m:
+                        if (othernode,m) in py_motif:
+                            contribution += adj[othernode-1][m-1]
+                            npred+=1
+
+                for othernode in py_members:
+                    if othernode != m:
+                        if (m,othernode) in py_motif:
+                            contribution += adj[m-1][othernode-1]
+                            nprey+=1
+
+		normalization += contribution/float(nprey+npred)
+
+            normalization = sum([adj[m[0]-1][m[1]-1] for m in py_motif])/float(normalization*len(py_motif))
+            # normalization = sum([adj[m[0]-1][m[1]-1] for m in py_motif])/float(normalization)
+
+            for m in py_members:
+
+                # I might not need this shit because I initialized everything before!
+                if m not in participation:
+                    participation[m] = {}
+
+                contribution=0
+                npred=0
+                nprey=0
+                for othernode in py_members:
+                    if othernode != m:
+                        if (othernode,m) in py_motif:
+                            contribution += adj[othernode-1][m-1]
+                            npred+=1
+
+                for othernode in py_members:
+                    if othernode != m:
+                        if (m,othernode) in py_motif:
+                            contribution += adj[m-1][othernode-1]
+                            nprey+=1
+
+		contribution = normalization*contribution/float(nprey+npred)
+
+                try:
+                    participation[m][id] += contribution
+                except KeyError:
+                    participation[m][id] = contribution
+
+            am_l = am_l.next
+
+        r_l = r_l.next
+
+    r_l = results.l
+    while (r_l != None):
+        motif = cmfinder.get_motif(r_l.p)
+        id = int(motif.id)
+
+        for n in participation:
+            try:
+                x = participation[n][id]
+            except KeyError:
+                participation[n][id] = 0
+
+        r_l = r_l.next
+
+    cmfinder.res_tbl_mem_free_single(results)
+
+    if stoufferIDs and mfinderi.MotifSize == 3:
+        for n in participation:
+            participation[n] = dict([(STOUFFER_MOTIF_IDS[id],participation[n][id]) for id in participation[n]])
+        return participation
+    else:
+        return participation    
+
+
+def weighted_role_stats(mfinderi,network,stoufferIDs, networktype, adj):
+    results = cmfinder.motif_participation(mfinderi)
+
+    maxed_out_member_list = False
+    max_count = 0
+    while True:
+        maxed_out_member_list = False
+
+        r_l = results.l
+        while (r_l != None):
+            motif = cmfinder.get_motif(r_l.p)
+
+            if(int(motif.count) != motif.all_members.size):
+                maxed_out_member_list = True
+                max_count = max(max_count, int(motif.count))
+
+            r_l = r_l.next
+
+        if maxed_out_member_list:
+            #sys.stderr.write("upping the ante bitches!\n")
+            mfinderi.MaxMembersListSz = max_count + 1
+            results = cmfinder.motif_participation(mfinderi)
+
+        else:
+            break
+
+    possible_roles = []
+    if networktype == "unipartite":
+      for motif,roles in UNIPARTITE_ROLES[mfinderi.MotifSize]:
+          possible_roles += [tuple([motif] + list(role)) for role in roles]
+    elif networktype == "bipartite":
+      for motif,roles in BIPARTITE_ROLES[mfinderi.MotifSize]:
+          possible_roles += [tuple([motif] + list(role)) for role in roles]
+
+    #Inicialize a dictionary to store the motif-role profile of every species
+    #_network is a set containing all the interactions
+    roles = {}
+    _network = set([])
+
+    for i,j,k in network:
+	_network.add((i,j))
+        try:
+            x = roles[i]
+        except KeyError:
+            roles[i] = {}
+        try:
+            x = roles[j]
+        except KeyError:
+            roles[j] = {}
+
+    roles = {}
+    r_l = results.l
+    members = cmfinder.intArray(mfinderi.MotifSize)
+    while (r_l != None):
+        motif = cmfinder.get_motif(r_l.p)
+        id = int(motif.id)
+        
+        am_l = motif.all_members.l
+        while (am_l != None):
+            cmfinder.get_motif_members(am_l.p, members, mfinderi.MotifSize)
+            py_members = [int(members[i]) for i in xrange(mfinderi.MotifSize)]
+            py_motif = set([(i,j) for i,j in _network if (i in py_members and j in py_members)])
+            normalization = 0
+
+            #Silly loop that I'm sure I could integrate to the following one...
+            for m in py_members:
+                contribution=0
+                npred=0
+                nprey=0
+                for othernode in py_members:
+                    if othernode != m:
+                        if (othernode,m) in py_motif:
+                            contribution += adj[othernode-1][m-1]
+                            npred+=1
+
+                for othernode in py_members:
+                    if othernode != m:
+                        if (m,othernode) in py_motif:
+                            contribution += adj[m-1][othernode-1]
+                            nprey+=1
+
+                normalization += contribution/float(nprey+npred)
+
+            normalization = sum([adj[m[0]-1][m[1]-1] for m in py_motif])/float(normalization*len(py_motif))
+            # normalization = sum([adj[m[0]-1][m[1]-1] for m in py_motif])/float(normalization)
+
+            for m in py_members:
+
+                # I might not need this shit because I initialized everything before!
+                if m not in roles:
+                    roles[m] = {}
+
+                contribution=0
+                npred=0
+                nprey=0
+                for othernode in py_members:
+                    if othernode != m:
+                        if (othernode,m) in py_motif:
+                            contribution += adj[othernode-1][m-1]
+                            npred+=1
+
+                for othernode in py_members:
+                    if othernode != m:
+                        if (m,othernode) in py_motif:
+                            contribution += adj[m-1][othernode-1]
+                            nprey+=1
+
+		contribution = normalization*contribution/float(nprey+npred)
+
+                key = (id, npred, nprey)
+
+                # if the node's in and out degrees are insufficient to discern its role
+                # we will add the degrees of the nodes it interacts with (its neighbors)
+                if key not in possible_roles:
+                    if npred > 0:
+                        connected_to = set([othernode for othernode in py_members if othernode != m and (othernode,m) in py_motif])
+                        npreys = [sum([(i,j) in py_motif for j in py_members if j != i]) for i in connected_to]
+                        npreys.sort()
+                        key = tuple(list(key) + [tuple(npreys)])
+                    else:
+                        connected_to = set([othernode for othernode in py_members if othernode != m and (m,othernode) in py_motif])
+                        npreds = [sum([(j,i) in py_motif for j in py_members if j != i]) for i in connected_to]
+                        npreds.sort()
+                        key = tuple(list(key) + [tuple(npreds)])
+
+                if key not in possible_roles:
+                    print >> sys.stderr, key
+                    print >> sys.stderr, "Apparently there is a role you aren't accounting for in roles.py."
+                    sys.exit()
+
+                try:
+                    roles[m][key] += contribution
+                except KeyError:
+                    roles[m][key] = contribution
+
+            am_l = am_l.next
+
+        r_l = r_l.next
+
+    cmfinder.res_tbl_mem_free_single(results)
+
+    for n in roles:
+        for r in possible_roles:
+            try:
+                x = roles[n][r]
+            except KeyError:
+                roles[n][r] = 0
+
+    if stoufferIDs and mfinderi.MotifSize == 3 and networktype == "unipartite":
+        for n in roles:
+            roles[n] = dict([(possible_roles.index(r)+1,roles[n][r]) for r in roles[n]])
+        return roles
+    else:
+        return roles
+
 
 ##############################################################
 ##############################################################
