@@ -31,7 +31,7 @@ def relabel_nodes(links):
     for i in range(len(links)):
         try:
             s,t,w = links[i]
-            w = int(w)
+            w = float(w)
         except ValueError:
             s,t = links[i]
             w = 1
@@ -60,7 +60,7 @@ def gen_mfinder_network(links):
     for i in range(len(links)):
         try:
             s,t,w = links[i]
-            w = int(w)
+            w = int(round(w))
         except ValueError:
             s,t = links[i]
             w = 1
