@@ -903,7 +903,6 @@ def weighted_role_stats(mfinderi,network,stoufferIDs, networktype, adj):
         except KeyError:
             roles[j] = {}
 
-    roles = {}
     r_l = results.l
     members = cmfinder.intArray(mfinderi.MotifSize)
     while (r_l != None):
