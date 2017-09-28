@@ -32,7 +32,7 @@ def relabel_nodes(links):
     for i in range(len(links)):
         try:
             s,t,w = links[i]
-            w = int(w)
+            w = float(w)
         except ValueError:
             s,t = links[i]
             w = 1
@@ -61,7 +61,7 @@ def gen_mfinder_network(links):
     for i in range(len(links)):
         try:
             s,t,w = links[i]
-            w = int(w)
+            w = int(round(w))
         except ValueError:
             s,t = links[i]
             w = 1
@@ -80,27 +80,21 @@ def mfinder_network_setup(network):
         network = read_links(network)
         network, node_dict = relabel_nodes(network)
         edges, numedges = gen_mfinder_network(network)
-        return edges, numedges, node_dict
+        return network, edges, numedges, node_dict
     elif type(network) == type([1,2,3]):
         network, node_dict = relabel_nodes(network)
         edges, numedges = gen_mfinder_network(network)
-        return edges, numedges, node_dict
+        return network, edges, numedges, node_dict
     else:
         sys.stderr.write("Uncle Sam frowns upon tax cheats.\n")
         sys.exit()
 
-# turn an mfinder-style network into a human-intelligible one
-def human_network_setup(network):
-    if type(network) == type("hello world"):
-        # DEBUG: if we want to use a filename we need to run a check here to make sure that the node labels are integers and that there are weights
-        # web.Filename = network
-        network = read_links(network)
-        return relabel_nodes(network)
-    elif type(network) == type([1,2,3]):
-        return relabel_nodes(network)
-    else:
-        sys.stderr.write("Whatcha talkin' 'bout Willis?\n")
-        sys.exit()
+# DEBUG: This is a function that is not really necessary because the C code should provide the adjacency
+def adjacency(links, size):
+    adj=[[0.0 for x in range(size)] for y in range(size)]
+    for i in links:
+        adj[i[0]-1][i[1]-1]=i[2]
+    return adj
 
 # if we've relabeled the nodes, make sure the output corresponds to the input labels
 def decode_net(edges,node_dictionary):
@@ -175,7 +169,7 @@ def random_network(network,
     web = cmfinder.mfinder_input()
 
     # setup the network info
-    web.Edges, web.NumEdges, node_dict = mfinder_network_setup(network)
+    network, web.Edges, web.NumEdges, node_dict = mfinder_network_setup(network)
 
     # parameterize the analysis
     if not usemetropolis:
@@ -201,33 +195,22 @@ def randomized_network(mfinderi):
 
     return edges
 
-def print_random_network(edges,outFile=None,sep=" ",weighted=False,header=False):
+def print_random_network(edges,outFile=None,sep=" ",header=False):
     if outFile:
         fstream = open(outFile,'w')
     else:
         fstream = sys.stdout
 
     if header:
-        if weighted:
-          output = sep.join(['target',
-                             'source',
-                             'weight',])
-        else:
-          output = sep.join(['target',
-                             'source',])
+        output = sep.join(['target',
+                           'source',])
 
         fstream.write(output + '\n')
 
     for trg,src,w in sorted(edges):
-        if weighted:
-          output = sep.join(["%s" % trg,
-                             "%s" % src,
-                             "%s" % w,
-                             ])
-        else:
-          output = sep.join(["%s" % trg,
-                             "%s" % src,
-                             ])
+        output = sep.join(["%s" % trg,
+                           "%s" % src,
+                           ])
 
         fstream.write(output + '\n')
 
@@ -253,7 +236,7 @@ def motif_structure(network,
     web = cmfinder.mfinder_input()
 
     # setup the network info
-    web.Edges, web.NumEdges, node_dict = mfinder_network_setup(network)
+    network, web.Edges, web.NumEdges, node_dict = mfinder_network_setup(network)
 
     # parameterize the analysis
     web.MotifSize = motifsize
@@ -263,6 +246,7 @@ def motif_structure(network,
     else:
         web.UseMetropolis = 1
 
+    # determine all nodes' role statistics
     return motif_stats(web,stoufferIDs)
         
 def motif_stats(mfinderi,stoufferIDs):
@@ -397,14 +381,14 @@ def motif_participation(network,
                         maxmemberslistsz = 1000,
                         randomize = False,
                         usemetropolis = False,
-                        stoufferIDs = False,
+                        stoufferIDs = False
                         ):
 
     # initialize the heinous input struct
     web = cmfinder.mfinder_input()
 
     # setup the network info
-    web.Edges, web.NumEdges, node_dict = mfinder_network_setup(network)
+    network, web.Edges, web.NumEdges, node_dict = mfinder_network_setup(network)
 
     # parameterize the analysis
     web.MotifSize = motifsize
@@ -479,8 +463,6 @@ def role_stats(mfinderi,network,stoufferIDs,networktype):
         else:
             break
 
-    _network = set([(i,j) for i,j,k in network])
-
     possible_roles = []
     if networktype == "unipartite":
       for motif,roles in UNIPARTITE_ROLES[mfinderi.MotifSize]:
@@ -489,7 +471,23 @@ def role_stats(mfinderi,network,stoufferIDs,networktype):
       for motif,roles in BIPARTITE_ROLES[mfinderi.MotifSize]:
           possible_roles += [tuple([motif] + list(role)) for role in roles]
 
+    #Inicialize a dictionary to store the motif-role profile of every species
+    #_network is a set containing all the interactions
     roles = {}
+    _network = set([])
+
+    for i,j,k in network:
+	_network.add((i,j))
+        try:
+            x = roles[i]
+        except KeyError:
+            roles[i] = {}
+        try:
+            x = roles[j]
+        except KeyError:
+            roles[j] = {}
+
+    
     r_l = results.l
     members = cmfinder.intArray(mfinderi.MotifSize)
     while (r_l != None):
@@ -503,8 +501,6 @@ def role_stats(mfinderi,network,stoufferIDs,networktype):
             py_motif = set([(i,j) for i,j in _network if (i in py_members and j in py_members)])
 
             for m in py_members:
-                if m not in roles:
-                    roles[m] = {}
 
                 npred  = sum([(othernode,m) in py_motif for othernode in py_members if othernode != m])
                 nprey = sum([(m,othernode) in py_motif for othernode in py_members if othernode != m])
@@ -568,7 +564,7 @@ def motif_roles(network,
     web = cmfinder.mfinder_input()
 
     # setup the network info
-    web.Edges, web.NumEdges, node_dict = mfinder_network_setup(network)
+    network, web.Edges, web.NumEdges, node_dict = mfinder_network_setup(network)
 
     # parameterize the analysis
     web.MotifSize = motifsize
@@ -584,10 +580,6 @@ def motif_roles(network,
             web.UseMetropolis = 0
         else:
             web.UseMetropolis = 1
-    
-    # turn the weighted network into just a list of links
-    # NOTE: the node_dict is not required since we've already relabeled nodes above
-    network, _unnecessary_node_dict = human_network_setup(network)
 
     # determine all nodes' role statistics
     r_stats = role_stats(web,network,stoufferIDs,networktype)
@@ -626,6 +618,7 @@ def print_roles(role_stats,outFile=None,sep=" ",header=False):
         fstream.close()
 
     return
+
 
 ##############################################################
 ##############################################################
