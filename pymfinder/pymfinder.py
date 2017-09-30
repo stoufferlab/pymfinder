@@ -1,6 +1,7 @@
 
 import mfinder.mfinder as cmfinder
 import sys
+from itertools import combinations
 
 from roles import *
 from datatypes import *
@@ -285,6 +286,7 @@ def motif_stats(mfinderi,stoufferIDs):
 ##############################################################
 
 def motif_participation(network,
+                        links = False,
                         motifsize = 3,
                         maxmemberslistsz = 1000,
                         randomize = False,
@@ -313,10 +315,10 @@ def motif_participation(network,
         else:
             web.UseMetropolis = 1
         
-    return participation_stats(web,node_dict,stoufferIDs)
+    return participation_stats(web,node_dict,network,links,stoufferIDs)
 
 
-def participation_stats(mfinderi,node_dict,stoufferIDs):
+def participation_stats(mfinderi,node_dict,network,links,stoufferIDs):
     results = cmfinder.motif_participation(mfinderi)
 
     node_dict = dict((v,k) for k,v in node_dict.iteritems())
@@ -345,8 +347,22 @@ def participation_stats(mfinderi,node_dict,stoufferIDs):
             break
 
     participation = ParticipationStats()
-    for n in node_dict.values():
-        participation.add_node(n)
+
+    if links:
+        for i,j,k in network:
+            participation.add_link((i,j))
+            try:
+                x = participation.nodes[node_dict[i]]
+            except KeyError:
+                participation.add_node(node_dict[i])
+            try:
+                x = participation.nodes[node_dict[j]]
+            except KeyError:
+                participation.add_node(node_dict[j])
+
+    else:
+        for n in node_dict.values():
+            participation.add_node(n)
 
     r_l = results.l
     members = cmfinder.intArray(mfinderi.MotifSize)
@@ -365,6 +381,29 @@ def participation_stats(mfinderi,node_dict,stoufferIDs):
                 except KeyError:
                     participation.nodes[node_dict[m]].motifs[id] = 1
 
+
+            #THIS DOES NOT WORK!
+            if links:
+                for m, n in combinations(py_members, 2):
+                    try:
+                        x = participation.links[(node_dict[m], node_dict[n])]
+			try:
+                            participation.links[(node_dict[m], node_dict[n])].motifs[id] += 1
+                        except KeyError:
+                            participation.links[(node_dict[m], node_dict[n])].motifs[id] = 1
+                    except KeyError:
+                        pass
+
+                    try:
+                        x = participation.links[(node_dict[n], node_dict[m])]
+			try:
+                            participation.links[(node_dict[n], node_dict[m])].motifs[id] += 1
+                        except KeyError:
+                            participation.links[(node_dict[n], node_dict[m])].motifs[id] = 1
+                    except KeyError:
+                        pass
+
+
             am_l = am_l.next
 
         r_l = r_l.next
@@ -379,6 +418,13 @@ def participation_stats(mfinderi,node_dict,stoufferIDs):
                 x = participation.nodes[n].motifs[id]
             except KeyError:
                 participation.nodes[n].motifs[id] = 0
+
+        if links:
+            for n in participation.links:
+                try:
+                    x = participation.links[n].motifs[id]
+                except KeyError:
+                    participation.links[n].motifs[id] = 0
 
         r_l = r_l.next
 
@@ -395,6 +441,45 @@ def participation_stats(mfinderi,node_dict,stoufferIDs):
 # MOTIF ROLES CODE
 ##############################################################
 ##############################################################
+
+def motif_roles(network,
+                motifsize = 3,
+                maxmemberslistsz = 1000,
+                randomize = False,
+                usemetropolis = False,
+                stoufferIDs = False,
+                networktype = "unipartite",
+                ):
+
+    # initialize the heinous input struct
+    web = cmfinder.mfinder_input()
+
+    # setup the network info
+    network, web.Edges, web.NumEdges, node_dict = mfinder_network_setup(network)
+
+    # parameterize the analysis
+    web.MotifSize = motifsize
+    web.MaxMembersListSz = maxmemberslistsz
+
+    # do we want to randomize the network first?
+    if not randomize:
+        web.Randomize = 0
+    else:
+        web.Randomize = 1
+        # if so, should we use the metropolis algorithm?
+        if not usemetropolis:
+            web.UseMetropolis = 0
+        else:
+            web.UseMetropolis = 1
+
+    # determine all nodes' role statistics
+    r_stats = role_stats(web,network,stoufferIDs,networktype)
+
+    try:
+        return decode_stats(r_stats,node_dict)
+    except UnboundLocalError:
+        return r_stats
+
 
 def role_stats(mfinderi,network,stoufferIDs,networktype):
     results = cmfinder.motif_participation(mfinderi)
@@ -510,43 +595,6 @@ def role_stats(mfinderi,network,stoufferIDs,networktype):
     else:
         return roles
 
-def motif_roles(network,
-                motifsize = 3,
-                maxmemberslistsz = 1000,
-                randomize = False,
-                usemetropolis = False,
-                stoufferIDs = False,
-                networktype = "unipartite",
-                ):
-
-    # initialize the heinous input struct
-    web = cmfinder.mfinder_input()
-
-    # setup the network info
-    network, web.Edges, web.NumEdges, node_dict = mfinder_network_setup(network)
-
-    # parameterize the analysis
-    web.MotifSize = motifsize
-    web.MaxMembersListSz = maxmemberslistsz
-
-    # do we want to randomize the network first?
-    if not randomize:
-        web.Randomize = 0
-    else:
-        web.Randomize = 1
-        # if so, should we use the metropolis algorithm?
-        if not usemetropolis:
-            web.UseMetropolis = 0
-        else:
-            web.UseMetropolis = 1
-
-    # determine all nodes' role statistics
-    r_stats = role_stats(web,network,stoufferIDs,networktype)
-
-    try:
-        return decode_stats(r_stats,node_dict)
-    except UnboundLocalError:
-        return r_stats
 
 def print_roles(role_stats,outFile=None,sep=" ",header=False):
     if outFile:

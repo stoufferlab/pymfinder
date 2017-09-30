@@ -73,15 +73,15 @@ class MotifStats(object):
 
 ##############################################################
 ##############################################################
-# What is a node?
+# What is a node or a link?
 ##############################################################
 ##############################################################
 
-class Node(object):
-    """Node info class"""
+class NodeLink(object):
+    """NodeLink info class"""
 
-    def __init__(self,node_id=None):
-        self.id = node_id
+    def __init__(self,nodelink_id=None):
+        self.id = nodelink_id
         self.motifs = dict()
 
 
@@ -96,12 +96,19 @@ class ParticipationStats(object):
 
     def __init__(self):
         self.nodes = dict()
+	self.links = dict()
 
     def add_node(self,node_id):
         if node_id in self.nodes:
             sys.stderr.write("You're trying to add a node more than once. According to the developers, this is classified as highly unusual.\n")
         else:
-            self.nodes[node_id] = Node(node_id)
+            self.nodes[node_id] = NodeLink(node_id)
+
+    def add_link(self,link_id):
+        if link_id in self.links:
+            sys.stderr.write("You're trying to add a link more than once. According to the developers, this is classified as highly unusual.\n")
+        else:
+            self.links[link_id] = NodeLink(link_id)
 
     def use_stouffer_IDs(self):
         from roles import STOUFFER_MOTIF_IDS
@@ -114,6 +121,14 @@ class ParticipationStats(object):
             else:
                 pass
 
+        for n in self.links:
+            ineligible_ids = [motif_id for motif_id in self.links[n].motifs if motif_id not in STOUFFER_MOTIF_IDS]
+
+            if len(ineligible_ids) == 0:
+                self.links[n].motifs = dict([(STOUFFER_MOTIF_IDS[id],self.links[n].motifs[id]) for id in self.links[n].motifs])
+            else:
+                pass
+
     # DEBUG: it would be nice to be able to turn the header on and off
     def __str__(self):
         # set up a header
@@ -123,6 +138,15 @@ class ParticipationStats(object):
         # set up the data itself
         for m in sorted(self.nodes.keys()):
             output = output + " ".join([str(m)] + list(map(str,[j for i,j in sorted(self.nodes[m].motifs.items())]))) + '\n'
+
+        if self.links != dict():
+            # set up a header
+            output = output + '\n\n' + " ".join(["link"]+list(map(str,sorted(self.links[self.links.keys()[0]].motifs.keys()))))
+            output = output + '\n'
+
+            # set up the data itself
+            for m in sorted(self.links.keys()):
+                output = output + " ".join([str(m)] + list(map(str,[j for i,j in sorted(self.links[m].motifs.items())]))) + '\n'
 
         # return this ghastly beast
         return(output)
