@@ -102,6 +102,7 @@ def decode_net(edges,node_dictionary):
     return [(reverse_dictionary[i],reverse_dictionary[j],k) for i,j,k in edges]
 
 # if we've relabeled the nodes, make sure the output corresponds to the input labels
+# This should eventually be removed
 def decode_stats(stats,node_dictionary):
     reverse_dictionary = dict([(j,i) for i,j in node_dictionary.items()])
     return dict([(reverse_dictionary[i],j) for i,j in stats.items()])
@@ -276,105 +277,12 @@ def motif_stats(mfinderi,stoufferIDs):
 
     return motif_stats
 
-def print_motif_structure(motif_stats,outFile=None,sep=" ",header=False):
-    if outFile:
-        fstream = open(outFile,'w')
-    else:
-        fstream = sys.stdout
-
-    if header:
-        output = sep.join(['motif',
-                           'real',
-                           'rand',
-                           'srand',
-                           'zscore',])
-        fstream.write(output + '\n')
-
-    fstream.write(str(motif_stats) + '\n')
-
-    if outFile:
-        fstream.close()
-
-    return
 
 ##############################################################
 ##############################################################
 # MOTIF PARTICIPATION CODE
 ##############################################################
 ##############################################################
-
-def participation_stats(mfinderi,stoufferIDs):
-    results = cmfinder.motif_participation(mfinderi)
-
-    maxed_out_member_list = False
-    max_count = 0
-    while True:
-        maxed_out_member_list = False
-
-        r_l = results.l
-        while (r_l != None):
-            motif = cmfinder.get_motif(r_l.p)
-
-            if(int(motif.count) != motif.all_members.size):
-                maxed_out_member_list = True
-                max_count = max(max_count, int(motif.count))
-
-            r_l = r_l.next
-
-        if maxed_out_member_list:
-            #sys.stderr.write("upping the ante bitches!\n")
-            mfinderi.MaxMembersListSz = max_count + 1
-            results = cmfinder.motif_participation(mfinderi)
-
-        else:
-            break
-
-    participation = {}
-    r_l = results.l
-    members = cmfinder.intArray(mfinderi.MotifSize)
-    while (r_l != None):
-        motif = cmfinder.get_motif(r_l.p)
-        id = int(motif.id)
-
-        am_l = motif.all_members.l
-        while (am_l != None):
-            cmfinder.get_motif_members(am_l.p, members, mfinderi.MotifSize)
-            py_members = [int(members[i]) for i in xrange(mfinderi.MotifSize)]
-
-            for m in py_members:
-                if m not in participation:
-                    participation[m] = {}
-
-                try:
-                    participation[m][id] += 1
-                except KeyError:
-                    participation[m][id] = 1
-
-            am_l = am_l.next
-
-        r_l = r_l.next
-
-    r_l = results.l
-    while (r_l != None):
-        motif = cmfinder.get_motif(r_l.p)
-        id = int(motif.id)
-
-        for n in participation:
-            try:
-                x = participation[n][id]
-            except KeyError:
-                participation[n][id] = 0
-
-        r_l = r_l.next
-
-    cmfinder.res_tbl_mem_free_single(results)
-
-    if stoufferIDs and mfinderi.MotifSize == 3:
-        for n in participation:
-            participation[n] = dict([(STOUFFER_MOTIF_IDS[id],participation[n][id]) for id in participation[n]])
-        return participation
-    else:
-        return participation    
 
 def motif_participation(network,
                         motifsize = 3,
@@ -405,31 +313,82 @@ def motif_participation(network,
         else:
             web.UseMetropolis = 1
         
-    p_stats = participation_stats(web,stoufferIDs)
+    return participation_stats(web,node_dict,stoufferIDs)
 
-    try:
-        return decode_stats(p_stats,node_dict)
-    except UnboundLocalError:
-        return p_stats
 
-def print_participation(participation_stats,outFile=None,sep=" ",header=False):
-    if outFile:
-        fstream = open(outFile,'w')
-    else:
-        fstream = sys.stdout
+def participation_stats(mfinderi,node_dict,stoufferIDs):
+    results = cmfinder.motif_participation(mfinderi)
 
-    if header:
-        output = sep.join(["node"]+list(map(str,sorted(participation_stats[participation_stats.keys()[0]].keys()))))
-        fstream.write(output + '\n')
+    node_dict = dict((v,k) for k,v in node_dict.iteritems())
 
-    for n in sorted(participation_stats.keys()):
-        output = sep.join([str(n)] + list(map(str,[j for i,j in sorted(participation_stats[n].items())])))
-        fstream.write(output + '\n')
+    maxed_out_member_list = False
+    max_count = 0
+    while True:
+        maxed_out_member_list = False
 
-    if outFile:
-        fstream.close()
+        r_l = results.l
+        while (r_l != None):
+            motif = cmfinder.get_motif(r_l.p)
 
-    return
+            if(int(motif.count) != motif.all_members.size):
+                maxed_out_member_list = True
+                max_count = max(max_count, int(motif.count))
+
+            r_l = r_l.next
+
+        if maxed_out_member_list:
+            #sys.stderr.write("upping the ante bitches!\n")
+            mfinderi.MaxMembersListSz = max_count + 1
+            results = cmfinder.motif_participation(mfinderi)
+
+        else:
+            break
+
+    participation = ParticipationStats()
+    for n in node_dict.values():
+        participation.add_node(n)
+
+    r_l = results.l
+    members = cmfinder.intArray(mfinderi.MotifSize)
+    while (r_l != None):
+        motif = cmfinder.get_motif(r_l.p)
+        id = int(motif.id)
+
+        am_l = motif.all_members.l
+        while (am_l != None):
+            cmfinder.get_motif_members(am_l.p, members, mfinderi.MotifSize)
+            py_members = [int(members[i]) for i in xrange(mfinderi.MotifSize)]
+
+            for m in py_members:
+                try:
+                    participation.nodes[node_dict[m]].motifs[id] += 1
+                except KeyError:
+                    participation.nodes[node_dict[m]].motifs[id] = 1
+
+            am_l = am_l.next
+
+        r_l = r_l.next
+
+    r_l = results.l
+    while (r_l != None):
+        motif = cmfinder.get_motif(r_l.p)
+        id = int(motif.id)
+
+        for n in participation.nodes:
+            try:
+                x = participation.nodes[n].motifs[id]
+            except KeyError:
+                participation.nodes[n].motifs[id] = 0
+
+        r_l = r_l.next
+
+    cmfinder.res_tbl_mem_free_single(results)
+
+    if stoufferIDs:
+        participation.use_stouffer_IDs()
+        
+    return participation
+
 
 ##############################################################
 ##############################################################
@@ -477,7 +436,7 @@ def role_stats(mfinderi,network,stoufferIDs,networktype):
     _network = set([])
 
     for i,j,k in network:
-	_network.add((i,j))
+        _network.add((i,j))
         try:
             x = roles[i]
         except KeyError:

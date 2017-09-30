@@ -69,3 +69,62 @@ class MotifStats(object):
 
         # return this ghastly beast
         return(output)
+
+
+##############################################################
+##############################################################
+# What is a node?
+##############################################################
+##############################################################
+
+class Node(object):
+    """Node info class"""
+
+    def __init__(self,node_id=None):
+        self.id = node_id
+        self.motifs = dict()
+
+
+##############################################################
+##############################################################
+# What is a participation stats?
+##############################################################
+##############################################################
+
+class ParticipationStats(object):
+    """ParticipationStats summary info class"""
+
+    def __init__(self):
+        self.nodes = dict()
+
+    def add_node(self,node_id):
+        if node_id in self.nodes:
+            sys.stderr.write("You're trying to add a node more than once. According to the developers, this is classified as highly unusual.\n")
+        else:
+            self.nodes[node_id] = Node(node_id)
+
+    def use_stouffer_IDs(self):
+        from roles import STOUFFER_MOTIF_IDS
+
+        for n in self.nodes:
+            ineligible_ids = [motif_id for motif_id in self.nodes[n].motifs if motif_id not in STOUFFER_MOTIF_IDS]
+
+            if len(ineligible_ids) == 0:
+                self.nodes[n].motifs = dict([(STOUFFER_MOTIF_IDS[id],self.nodes[n].motifs[id]) for id in self.nodes[n].motifs])
+            else:
+                pass
+
+    # DEBUG: it would be nice to be able to turn the header on and off
+    def __str__(self):
+        # set up a header
+        output = " ".join(["node"]+list(map(str,sorted(self.nodes[self.nodes.keys()[0]].motifs.keys()))))
+        output = output + '\n'
+
+        # set up the data itself
+        for m in sorted(self.nodes.keys()):
+            output = output + " ".join([str(m)] + list(map(str,[j for i,j in sorted(self.nodes[m].motifs.items())]))) + '\n'
+
+        # return this ghastly beast
+        return(output)
+
+
