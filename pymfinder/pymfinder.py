@@ -572,12 +572,38 @@ def role_stats(mfinderi,node_dict,network,links,networktype,stoufferIDs,allroles
                     print >> sys.stderr, "Apparently there is a role you aren't accounting for in roles.py."
                     sys.exit()
 
-                actual_roles.add(key)
-
                 try:
                     roles.nodes[node_dict[m]].roles[key] += 1
                 except KeyError:
                     roles.nodes[node_dict[m]].roles[key] = 1
+
+                actual_roles.add(key)
+
+                if links:
+                    for n in py_members:
+                        if n == m:
+                            continue
+
+                        if (node_dict[n],node_dict[m]) in roles.links:
+                            npred1  = sum([(othernode,n) in _network for othernode in py_members if othernode != n])
+                            nprey1 = sum([(n,othernode) in _network for othernode in py_members if othernode != n])
+                            npred2  = sum([(othernode,m) in _network for othernode in py_members if othernode != m])
+                            nprey2 = sum([(m,othernode) in _network for othernode in py_members if othernode != m])
+                            key = (id, (npred1, nprey1),(npred2, nprey2))
+
+                            if key not in possible_linkroles:
+                                key = (id, (npred2, nprey2),(npred1, nprey1))
+
+                            if key not in possible_linkroles:
+                                print >> sys.stderr, key
+                                print >> sys.stderr, "Apparently there is a role you aren't accounting for in roles.py."
+
+                            try:
+                                roles.links[(node_dict[n],node_dict[m])].roles[key] += 1
+                            except KeyError:
+                                roles.links[(node_dict[n],node_dict[m])].roles[key] = 1
+
+                            actual_linkroles.add(key)
 
             am_l = am_l.next
 
@@ -587,6 +613,8 @@ def role_stats(mfinderi,node_dict,network,links,networktype,stoufferIDs,allroles
 
     if not allroles:
         possible_roles = actual_roles
+	if links:
+            possible_linkroles = actual_linkroles
 
 
     for n in roles.nodes:
@@ -595,6 +623,15 @@ def role_stats(mfinderi,node_dict,network,links,networktype,stoufferIDs,allroles
                 x = roles.nodes[n].roles[r]
             except KeyError:
                 roles.nodes[n].roles[r] = 0
+
+    if links:
+        for n in roles.links:
+            for r in possible_linkroles:
+                try:
+                    x = roles.links[n].roles[r]
+                except KeyError:
+                    roles.links[n].roles[r] = 0
+
 
     if stoufferIDs:
         roles.use_stouffer_IDs()
