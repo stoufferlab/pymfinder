@@ -116,8 +116,9 @@ class NodeStats(object):
     def use_stouffer_IDs(self):
         from roles import STOUFFER_MOTIF_IDS, UNIPARTITE_ROLES
 
+        possible_roles = []
         for motif,roles in UNIPARTITE_ROLES[self.motifsize]:
-            possible_roles = [tuple([motif] + list(role)) for role in roles]
+            possible_roles += [tuple([motif] + list(role)) for role in roles]
 
         for n in self.nodes:
             if self.motifsize == 3 and self.networktype == "unipartite":
@@ -156,7 +157,8 @@ class NodeStats(object):
 
         if self.nodes[self.nodes.keys()[0]].roles != dict():
             # set up a header
-            output = " ".join(["node"]+list(map(str,[".".join(map(str,role)) for role in sorted(self.nodes[self.nodes.keys()[0]].roles.keys())])))
+            # DEBUG: consider changing role for ".".join(map(str, role)) fixing problems when STOUFFERID=True
+            output = " ".join(["node"]+list(map(str,[role for role in sorted(self.nodes[self.nodes.keys()[0]].roles.keys())])))
             output = output + '\n'
 
             # set up the data itself
