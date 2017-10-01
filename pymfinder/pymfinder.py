@@ -350,7 +350,7 @@ def participation_stats(mfinderi,node_dict,network,links,stoufferIDs):
 
     if links:
         for i,j,k in network:
-            participation.add_link((i,j))
+            participation.add_link((node_dict[i],node_dict[j]))
             try:
                 x = participation.nodes[node_dict[i]]
             except KeyError:
@@ -385,23 +385,17 @@ def participation_stats(mfinderi,node_dict,network,links,stoufferIDs):
             #THIS DOES NOT WORK!
             if links:
                 for m, n in combinations(py_members, 2):
-                    try:
-                        x = participation.links[(node_dict[m], node_dict[n])]
-			try:
+                    if (node_dict[m], node_dict[n]) in participation.links:
+                        try:
                             participation.links[(node_dict[m], node_dict[n])].motifs[id] += 1
                         except KeyError:
                             participation.links[(node_dict[m], node_dict[n])].motifs[id] = 1
-                    except KeyError:
-                        pass
 
-                    try:
-                        x = participation.links[(node_dict[n], node_dict[m])]
-			try:
+                    if (node_dict[n], node_dict[m]) in participation.links:
+                        try:
                             participation.links[(node_dict[n], node_dict[m])].motifs[id] += 1
                         except KeyError:
                             participation.links[(node_dict[n], node_dict[m])].motifs[id] = 1
-                    except KeyError:
-                        pass
 
 
             am_l = am_l.next
