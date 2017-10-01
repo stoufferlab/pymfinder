@@ -8,11 +8,10 @@ __all__ = [
 	'motif_structure',
 	'motif_participation',
 	'motif_roles',
-	'print_roles',
 	]
 
 from pymfinder import list_motifs, print_motifs
 from pymfinder import random_network, print_random_network
 from pymfinder import motif_structure
 from pymfinder import motif_participation
-from pymfinder import motif_roles, print_roles
+from pymfinder import motif_roles

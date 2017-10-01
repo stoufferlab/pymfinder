@@ -291,7 +291,8 @@ def motif_participation(network,
                         maxmemberslistsz = 1000,
                         randomize = False,
                         usemetropolis = False,
-                        stoufferIDs = False
+                        stoufferIDs = False,
+                        allmotifs = False
                         ):
 
     # initialize the heinous input struct
@@ -315,10 +316,10 @@ def motif_participation(network,
         else:
             web.UseMetropolis = 1
         
-    return participation_stats(web,node_dict,network,links,stoufferIDs)
+    return participation_stats(web,node_dict,network,links,stoufferIDs,allmotifs)
 
 
-def participation_stats(mfinderi,node_dict,network,links,stoufferIDs):
+def participation_stats(mfinderi,node_dict,network,links,stoufferIDs,allmotifs):
     results = cmfinder.motif_participation(mfinderi)
 
     node_dict = dict((v,k) for k,v in node_dict.iteritems())
@@ -346,29 +347,29 @@ def participation_stats(mfinderi,node_dict,network,links,stoufferIDs):
         else:
             break
 
-    participation = ParticipationStats()
+    possible_motifs = set(STOUFFER_MOTIF_IDS.keys())
+    actual_motifs = set([])
 
-    if links:
-        for i,j,k in network:
-            participation.add_link((node_dict[i],node_dict[j]))
-            try:
-                x = participation.nodes[node_dict[i]]
-            except KeyError:
-                participation.add_node(node_dict[i])
-            try:
-                x = participation.nodes[node_dict[j]]
-            except KeyError:
-                participation.add_node(node_dict[j])
+    participation = NodeStats(motifsize = mfinderi.MotifSize)
 
-    else:
-        for n in node_dict.values():
-            participation.add_node(n)
+    for i,j,k in network:
+        participation.add_link((node_dict[i],node_dict[j]))
+        try:
+            x = participation.nodes[node_dict[i]]
+        except KeyError:
+            participation.add_node(node_dict[i])
+        try:
+            x = participation.nodes[node_dict[j]]
+        except KeyError:
+            participation.add_node(node_dict[j])
+
 
     r_l = results.l
     members = cmfinder.intArray(mfinderi.MotifSize)
     while (r_l != None):
         motif = cmfinder.get_motif(r_l.p)
         id = int(motif.id)
+        actual_motifs.add(id)
 
         am_l = motif.all_members.l
         while (am_l != None):
@@ -381,8 +382,6 @@ def participation_stats(mfinderi,node_dict,network,links,stoufferIDs):
                 except KeyError:
                     participation.nodes[node_dict[m]].motifs[id] = 1
 
-
-            #THIS DOES NOT WORK!
             if links:
                 for m, n in combinations(py_members, 2):
                     if (node_dict[m], node_dict[n]) in participation.links:
@@ -402,27 +401,27 @@ def participation_stats(mfinderi,node_dict,network,links,stoufferIDs):
 
         r_l = r_l.next
 
-    r_l = results.l
-    while (r_l != None):
-        motif = cmfinder.get_motif(r_l.p)
-        id = int(motif.id)
+    cmfinder.res_tbl_mem_free_single(results)
 
+
+
+    if not allmotifs:
+        possible_motifs = actual_motifs
+
+
+    for r in possible_motifs:
         for n in participation.nodes:
             try:
-                x = participation.nodes[n].motifs[id]
+                x = participation.nodes[n].motifs[r]
             except KeyError:
-                participation.nodes[n].motifs[id] = 0
+                participation.nodes[n].motifs[r] = 0
 
         if links:
             for n in participation.links:
                 try:
-                    x = participation.links[n].motifs[id]
+                    x = participation.links[n].motifs[r]
                 except KeyError:
-                    participation.links[n].motifs[id] = 0
-
-        r_l = r_l.next
-
-    cmfinder.res_tbl_mem_free_single(results)
+                    participation.links[n].motifs[r] = 0
 
     if stoufferIDs:
         participation.use_stouffer_IDs()
@@ -437,12 +436,14 @@ def participation_stats(mfinderi,node_dict,network,links,stoufferIDs):
 ##############################################################
 
 def motif_roles(network,
+                links=False,
                 motifsize = 3,
                 maxmemberslistsz = 1000,
                 randomize = False,
                 usemetropolis = False,
                 stoufferIDs = False,
                 networktype = "unipartite",
+                allroles=False,
                 ):
 
     # initialize the heinous input struct
@@ -467,16 +468,14 @@ def motif_roles(network,
             web.UseMetropolis = 1
 
     # determine all nodes' role statistics
-    r_stats = role_stats(web,network,stoufferIDs,networktype)
-
-    try:
-        return decode_stats(r_stats,node_dict)
-    except UnboundLocalError:
-        return r_stats
+    return role_stats(web,node_dict,network,links,networktype,stoufferIDs,allroles)
 
 
-def role_stats(mfinderi,network,stoufferIDs,networktype):
+def role_stats(mfinderi,node_dict,network,links,networktype,stoufferIDs,allroles):
+
     results = cmfinder.motif_participation(mfinderi)
+
+    node_dict = dict((v,k) for k,v in node_dict.iteritems())
 
     maxed_out_member_list = False
     max_count = 0
@@ -501,30 +500,39 @@ def role_stats(mfinderi,network,stoufferIDs,networktype):
         else:
             break
 
-    possible_roles = []
+    possible_roles = set([])
+    actual_roles = set([])
     if networktype == "unipartite":
       for motif,roles in UNIPARTITE_ROLES[mfinderi.MotifSize]:
-          possible_roles += [tuple([motif] + list(role)) for role in roles]
+          possible_roles.update([tuple([motif] + list(role)) for role in roles])
     elif networktype == "bipartite":
       for motif,roles in BIPARTITE_ROLES[mfinderi.MotifSize]:
-          possible_roles += [tuple([motif] + list(role)) for role in roles]
+          possible_roles.update([tuple([motif] + list(role)) for role in roles])
+
+    if links:
+        possible_linkroles = set([])
+        actual_linkroles = set([])
+        for motif,links in UNIPARTITE_LINKS_ROLES[mfinderi.MotifSize]:
+            possible_linkroles.update([tuple([motif] + list(link)) for link in links])
 
     #Inicialize a dictionary to store the motif-role profile of every species
     #_network is a set containing all the interactions
-    roles = {}
+    roles = NodeStats(motifsize = mfinderi.MotifSize,networktype = networktype)
+
     _network = set([])
 
     for i,j,k in network:
-        _network.add((i,j))
-        try:
-            x = roles[i]
-        except KeyError:
-            roles[i] = {}
-        try:
-            x = roles[j]
-        except KeyError:
-            roles[j] = {}
+        roles.add_link((node_dict[i],node_dict[j]))
+	_network.add((i,j))
 
+        try:
+            x = roles.nodes[node_dict[i]]
+        except KeyError:
+            roles.add_node(node_dict[i])
+        try:
+            x = roles.nodes[node_dict[j]]
+        except KeyError:
+            roles.add_node(node_dict[j])
     
     r_l = results.l
     members = cmfinder.intArray(mfinderi.MotifSize)
@@ -564,10 +572,12 @@ def role_stats(mfinderi,network,stoufferIDs,networktype):
                     print >> sys.stderr, "Apparently there is a role you aren't accounting for in roles.py."
                     sys.exit()
 
+                actual_roles.add(key)
+
                 try:
-                    roles[m][key] += 1
+                    roles.nodes[node_dict[m]].roles[key] += 1
                 except KeyError:
-                    roles[m][key] = 1
+                    roles.nodes[node_dict[m]].roles[key] = 1
 
             am_l = am_l.next
 
@@ -575,50 +585,21 @@ def role_stats(mfinderi,network,stoufferIDs,networktype):
 
     cmfinder.res_tbl_mem_free_single(results)
 
-    for n in roles:
+    if not allroles:
+        possible_roles = actual_roles
+
+
+    for n in roles.nodes:
         for r in possible_roles:
             try:
-                x = roles[n][r]
+                x = roles.nodes[n].roles[r]
             except KeyError:
-                roles[n][r] = 0
+                roles.nodes[n].roles[r] = 0
 
-    if stoufferIDs and mfinderi.MotifSize == 3 and networktype == "unipartite":
-        for n in roles:
-            roles[n] = dict([(possible_roles.index(r)+1,roles[n][r]) for r in roles[n]])
-        return roles
-    else:
-        return roles
+    if stoufferIDs:
+        roles.use_stouffer_IDs()
 
-
-def print_roles(role_stats,outFile=None,sep=" ",header=False):
-    if outFile:
-        fstream = open(outFile,'w')
-    else:
-        fstream = sys.stdout
-
-    roles = sorted(role_stats[role_stats.keys()[0]].keys())
-
-    if header:
-        try:
-            funkyroles = []
-            for role in roles:
-                if len(role) == 3:
-                    funkyroles.append(role)
-                else:
-                    funkyroles.append(tuple(role[:3] + tuple(role[-1])))
-            output = sep.join(["node"]+list(map(str,[",".join(map(str,role)) for role in funkyroles])))
-        except TypeError:
-            output = sep.join(["node"]+list(map(str,roles)))
-        fstream.write(output + '\n')
-
-    for n in sorted(role_stats.keys()):
-        output = sep.join([str(n)] + list(map(str,[role_stats[n][role] for role in roles])))
-        fstream.write(output + '\n')
-
-    if outFile:
-        fstream.close()
-
-    return
+    return roles
 
 
 ##############################################################
