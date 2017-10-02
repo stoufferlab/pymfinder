@@ -33,36 +33,36 @@ class pymfinderTestCase(unittest.TestCase):
     def test_unipartite_motif_structure(self):
 	for i in range(0,2):
 		result = motif_structure(self.test_filename_u[i], motifsize=i+2, nrandomizations=0)
-		motifs=[result[n]["real"] for n in result]
+		motifs=[result.motifs[n].real for n in result.motifs]
 		self.assertTrue(motifs==[1]*len(motifs))
 
     def test_unipartite_motif_participation(self):
 	for i in range(0,2):
 		result = motif_participation(self.test_filename_u[i], motifsize=i+2,)
-		all_roles = result[result.keys()[0]].keys()
-		roles=[[result[n][r] for r in all_roles] for n in result]
+		all_roles = result.nodes[result.nodes.keys()[0]].motifs.keys()
+		roles=[[result.nodes[n].motifs[r] for r in all_roles] for n in result.nodes]
 		check_columns=[sum(x) for x in zip(*roles)]==[i+2]*len(all_roles)
-		check_rows=[sum(x) for x in roles]==[1]*len(result)
+		check_rows=[sum(x) for x in roles]==[1]*len(result.nodes)
         	self.assertTrue(check_columns and check_rows)
 
     def test_unipartite_motif_roles(self):
 	for i in range(0,2):
 		result = motif_roles(self.test_filename_u[i], motifsize=i+2,)
-		all_roles = result[result.keys()[0]].keys()
-		roles=[[result[n][r] for r in all_roles] for n in result]
+		all_roles = result.nodes[result.nodes.keys()[0]].roles.keys()
+		roles=[[result.nodes[n].roles[r] for r in all_roles] for n in result.nodes]
 		columns=[sum(x) for x in zip(*roles)]
 		check_total_nodes=sum(columns)==3*13 or 2*2
 		check_columns=any(v==0 for v in columns)==False
-		check_rows=[sum(x) for x in roles]==[1]*len(result)
+		check_rows=[sum(x) for x in roles]==[1]*len(result.nodes)
         	self.assertTrue(check_columns and check_rows and check_total_nodes)
 
     def test_bipartite_motif_roles(self):
 	for i in range(0,5):
 		result = motif_roles(self.test_filename_b[i], motifsize=i+2, networktype = "bipartite",)
-		all_roles = result[result.keys()[0]].keys()
-		roles=[[result[n][r] for r in all_roles] for n in result]
+		all_roles = result.nodes[result.nodes.keys()[0]].roles.keys()
+		roles=[[result.nodes[n].roles[r] for r in all_roles] for n in result.nodes]
 		check_columns=any(v==0 for v in [ sum(x) for x in zip(*roles)])==False
-		check_rows=[sum(x) for x in roles]==[1]*len(result)
+		check_rows=[sum(x) for x in roles]==[1]*len(result.nodes)
         	self.assertTrue(check_columns and check_rows)
 
 def suite():
