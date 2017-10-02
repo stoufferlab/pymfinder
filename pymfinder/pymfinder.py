@@ -698,6 +698,53 @@ def role_stats(mfinderi,roles,node_dict,network,links,networktype,stoufferIDs,al
 
 ##############################################################
 ##############################################################
+# RUN IT ALL!
+##############################################################
+##############################################################
+
+def pymfinder(network,
+              links=False,
+              motifsize = 3,
+              stoufferIDs = None,
+              allmotifs = False,
+              nrandomizations = 0,
+              usemetropolis = False,
+              maxmemberslistsz = 1000,
+              networktype = "unipartite",
+              randomize = False
+              ):
+
+    stats = motif_structure(network,
+                            motifsize = motifsize,
+                            nrandomizations = nrandomizations,
+                            usemetropolis = usemetropolis,
+                            stoufferIDs = stoufferIDs)
+
+    stats = motif_participation(stats,
+                                links = links,
+                                motifsize = motifsize,
+                                maxmemberslistsz = maxmemberslistsz,
+                                randomize = randomize,
+                                usemetropolis = usemetropolis,
+                                stoufferIDs = stoufferIDs,
+                                allmotifs = allmotifs)
+
+    stats = motif_roles(stats,
+                        links = links,
+                        motifsize = motifsize,
+                        maxmemberslistsz = maxmemberslistsz,
+                        randomize = randomize,
+                        usemetropolis = usemetropolis,
+                        stoufferIDs = stoufferIDs,
+                        networktype = networktype,
+                        allroles = allmotifs)
+
+    return stats
+
+
+
+##############################################################
+##############################################################
 # C'est fini
 ##############################################################
 ##############################################################
