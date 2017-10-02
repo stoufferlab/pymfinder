@@ -12,7 +12,7 @@ from datatypes import *
 ##############################################################
 ##############################################################
 
-def read_links(filename,stats):
+def read_links(filename):
     inFile = open(filename, 'r')
     links = []
     for i in inFile.readlines():
@@ -23,20 +23,8 @@ def read_links(filename,stats):
             sys.exit()
         elif len(l) == 2:
             links += [tuple(l + [1])]
-            stats.add_link(tuple(l))
         else:
             links += [tuple(l)]
-            stats.add_link(tuple(l[0:2]))
-
-        try:
-            x = stats.nodes[l[0]]
-        except KeyError:
-            stats.add_node(l[0])
-        try:
-            x = stats.nodes[l[1]]
-        except KeyError:
-            stats.add_node(l[1])
-
 
     inFile.close()
 
@@ -73,13 +61,13 @@ def relabel_nodes(links,stats=None):
         if stats:
             stats.add_link((s,t))
             try:
-                x = stats.nodes[l[0]]
+                x = stats.nodes[s]
             except KeyError:
-                stats.add_node(l[0])
+                stats.add_node(s)
             try:
-                x = stats.nodes[l[1]]
+                x = stats.nodes[t]
             except KeyError:
-                stats.add_node(l[1])
+                stats.add_node(t)
 
     return links, node_dict
     
@@ -105,8 +93,8 @@ def mfinder_network_setup(network):
         # DEBUG: if we want to use a filename we need to run a check here to make sure that the node labels are integers and that there are weights
         # web.Filename = network
         stats = NetworkStats()
-        network = read_links(network,stats)
-        network, node_dict = relabel_nodes(network)
+        network = read_links(network)
+        network, node_dict = relabel_nodes(network,stats)
         edges, numedges = gen_mfinder_network(network)
         return network, stats, edges, numedges, node_dict
     elif type(network) == type([1,2,3]):
