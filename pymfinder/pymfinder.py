@@ -321,7 +321,6 @@ def motif_stats(mfinderi,motif_stats,stoufferIDs):
 def motif_participation(network,
                         links = False,
                         motifsize = 3,
-                        maxmemberslistsz = 1000,
                         randomize = False,
                         usemetropolis = False,
                         stoufferIDs = False,
@@ -347,7 +346,12 @@ def motif_participation(network,
 
     # parameterize the analysis
     web.MotifSize = motifsize
-    web.MaxMembersListSz = maxmemberslistsz
+    if len(stats.motifs) == 0:
+        web.NRandomizations = 0
+        web.UseMetropolis = 0
+        motif_stats(web,stats,stoufferIDs)
+
+    web.MaxMembersListSz = max([stats.motifs[x].real for x in stats.motifs])+1
 
     # do we want to randomize the network first?
     if not randomize:
@@ -375,29 +379,6 @@ def participation_stats(mfinderi,participation,node_dict,links,stoufferIDs,allmo
     results = cmfinder.motif_participation(mfinderi)
 
     node_dict = dict((v,k) for k,v in node_dict.iteritems())
-
-    maxed_out_member_list = False
-    max_count = 0
-    while True:
-        maxed_out_member_list = False
-
-        r_l = results.l
-        while (r_l != None):
-            motif = cmfinder.get_motif(r_l.p)
-
-            if(int(motif.count) != motif.all_members.size):
-                maxed_out_member_list = True
-                max_count = max(max_count, int(motif.count))
-
-            r_l = r_l.next
-
-        if maxed_out_member_list:
-            #sys.stderr.write("upping the ante bitches!\n")
-            mfinderi.MaxMembersListSz = max_count + 1
-            results = cmfinder.motif_participation(mfinderi)
-
-        else:
-            break
 
     possible_motifs = set(STOUFFER_MOTIF_IDS.keys())
     actual_motifs = set([])
@@ -476,7 +457,6 @@ def participation_stats(mfinderi,participation,node_dict,links,stoufferIDs,allmo
 def motif_roles(network,
                 links=False,
                 motifsize = 3,
-                maxmemberslistsz = 1000,
                 randomize = False,
                 usemetropolis = False,
                 stoufferIDs = False,
@@ -507,7 +487,12 @@ def motif_roles(network,
 
     # parameterize the analysis
     web.MotifSize = motifsize
-    web.MaxMembersListSz = maxmemberslistsz
+    if len(stats.motifs) == 0:
+        web.NRandomizations = 0
+        web.UseMetropolis = 0
+        motif_stats(web,stats,stoufferIDs)
+
+    web.MaxMembersListSz = max([stats.motifs[x].real for x in stats.motifs])+1
 
     # do we want to randomize the network first?
     if not randomize:
@@ -537,29 +522,6 @@ def role_stats(mfinderi,roles,node_dict,network,links,networktype,stoufferIDs,al
     results = cmfinder.motif_participation(mfinderi)
 
     node_dict = dict((v,k) for k,v in node_dict.iteritems())
-
-    maxed_out_member_list = False
-    max_count = 0
-    while True:
-        maxed_out_member_list = False
-
-        r_l = results.l
-        while (r_l != None):
-            motif = cmfinder.get_motif(r_l.p)
-
-            if(int(motif.count) != motif.all_members.size):
-                maxed_out_member_list = True
-                max_count = max(max_count, int(motif.count))
-
-            r_l = r_l.next
-
-        if maxed_out_member_list:
-            #sys.stderr.write("upping the ante bitches!\n")
-            mfinderi.MaxMembersListSz = max_count + 1
-            results = cmfinder.motif_participation(mfinderi)
-
-        else:
-            break
 
     possible_roles = set([])
     actual_roles = set([])
@@ -698,8 +660,7 @@ def pymfinder(network,
               nrandomizations = 0,
               usemetropolis = False,
               maxmemberslistsz = 1000,
-              networktype = "unipartite",
-              randomize = False
+              networktype = "unipartite"
               ):
 
     stats = motif_structure(network,
@@ -711,8 +672,7 @@ def pymfinder(network,
     stats = motif_participation(stats,
                                 links = links,
                                 motifsize = motifsize,
-                                maxmemberslistsz = maxmemberslistsz,
-                                randomize = randomize,
+                                randomize = False,
                                 usemetropolis = usemetropolis,
                                 stoufferIDs = stoufferIDs,
                                 allmotifs = allmotifs)
@@ -720,8 +680,7 @@ def pymfinder(network,
     stats = motif_roles(stats,
                         links = links,
                         motifsize = motifsize,
-                        maxmemberslistsz = maxmemberslistsz,
-                        randomize = randomize,
+                        randomize = False,
                         usemetropolis = usemetropolis,
                         stoufferIDs = stoufferIDs,
                         networktype = networktype,
