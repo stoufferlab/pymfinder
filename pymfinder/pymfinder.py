@@ -327,6 +327,13 @@ def motif_participation(network,
                         allmotifs = False
                         ):
 
+
+    # do we want to randomize the network first?
+    if randomize:
+        #This will restart the whole object
+        network = random_network(network, usemetropolis = usemetropolis)
+
+
     # initialize the heinous input struct
     web = cmfinder.mfinder_input()
 
@@ -346,23 +353,14 @@ def motif_participation(network,
 
     # parameterize the analysis
     web.MotifSize = motifsize
+    web.Randomize = 0
+    web.UseMetropolis = 0
     if len(stats.motifs) == 0:
         web.NRandomizations = 0
         web.UseMetropolis = 0
-        motif_stats(web,stats,stoufferIDs)
+        motif_stats(web,stats,stoufferIDs=False)
 
     web.MaxMembersListSz = max([stats.motifs[x].real for x in stats.motifs])+1
-
-    # do we want to randomize the network first?
-    if not randomize:
-        web.Randomize = 0
-    else:
-        web.Randomize = 1
-        # if so, should we use the metropolis algorithm?
-        if not usemetropolis:
-            web.UseMetropolis = 0
-        else:
-            web.UseMetropolis = 1
 
     #check if this function has already been run
     if len(stats.nodes[stats.nodes.keys()[0]].motifs) != 0:
@@ -464,6 +462,12 @@ def motif_roles(network,
                 allroles = False
                 ):
 
+
+    # do we want to randomize the network first?
+    if randomize:
+        #This will restart the whole object
+        network = random_network(network, usemetropolis = usemetropolis)
+
     # initialize the heinous input struct
     web = cmfinder.mfinder_input()
 
@@ -487,23 +491,14 @@ def motif_roles(network,
 
     # parameterize the analysis
     web.MotifSize = motifsize
+    web.Randomize = 0
+    web.UseMetropolis = 0
     if len(stats.motifs) == 0:
         web.NRandomizations = 0
         web.UseMetropolis = 0
-        motif_stats(web,stats,stoufferIDs)
+        motif_stats(web,stats,stoufferIDs=False)
 
     web.MaxMembersListSz = max([stats.motifs[x].real for x in stats.motifs])+1
-
-    # do we want to randomize the network first?
-    if not randomize:
-        web.Randomize = 0
-    else:
-        web.Randomize = 1
-        # if so, should we use the metropolis algorithm?
-        if not usemetropolis:
-            web.UseMetropolis = 0
-        else:
-            web.UseMetropolis = 1
 
     #check if this function has already been run
     if len(stats.nodes[stats.nodes.keys()[0]].roles) != 0:
@@ -658,21 +653,16 @@ def pymfinder(network,
               stoufferIDs = None,
               allmotifs = False,
               nrandomizations = 0,
+              randomize = False,
               usemetropolis = False,
-              maxmemberslistsz = 1000,
               networktype = "unipartite"
               ):
 
-    stats = motif_structure(network,
-                            motifsize = motifsize,
-                            nrandomizations = nrandomizations,
-                            usemetropolis = usemetropolis,
-                            stoufferIDs = stoufferIDs)
 
-    stats = motif_participation(stats,
+    stats = motif_participation(network,
                                 links = links,
                                 motifsize = motifsize,
-                                randomize = False,
+                                randomize = randomize,
                                 usemetropolis = usemetropolis,
                                 stoufferIDs = stoufferIDs,
                                 allmotifs = allmotifs)
@@ -685,6 +675,15 @@ def pymfinder(network,
                         stoufferIDs = stoufferIDs,
                         networktype = networktype,
                         allroles = allmotifs)
+
+    if nrandomizations != 0:
+        stats = motif_structure(stats,
+                                motifsize = motifsize,
+                                nrandomizations = nrandomizations,
+                                usemetropolis = usemetropolis,
+                                stoufferIDs = stoufferIDs)
+
+
 
     return stats
 
