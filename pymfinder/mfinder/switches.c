@@ -363,23 +363,47 @@ gen_rand_network_switches_method(Network **RN_p,double *switch_ratio)
 				//check : 1.that there are no crossing edges in the network,
 				//		  2.there are no common vertices of these 2 edges
 				//if hasnt passed the check then have to find other pair to switch
-				if ( !( MatGet(RN->mat,s1,t2) || MatGet(RN->mat,s2,t1)) && (s1!=t2) &&(s2!=t1) && (s1!=s2) && (t1!=t2) ) {
-					//make the switch
-					//update edges array
-					RN->e_arr[2*i-1].t=t2;
-					RN->e_arr[2*i].s=t2;
-					RN->e_arr[2*j-1].t=t1;
-					RN->e_arr[2*j].s=t1;
-					//update matrix
-					MatAsgn(RN->mat,s1,t1,0);
-					MatAsgn(RN->mat,t1,s1,0);
-					MatAsgn(RN->mat,s2,t2,0);
-					MatAsgn(RN->mat,t2,s2,0);
-					MatAsgn(RN->mat,s1,t2,1);
-					MatAsgn(RN->mat,t2,s1,1);
-					MatAsgn(RN->mat,s2,t1,1);
-					MatAsgn(RN->mat,t1,s2,1);
-					k++;
+
+				//correction 15 apr 2015 -wit probablity 0.5 check switch s1->t2  & s2->t1 and with 0.5 check switch s1->s2 & t1->t2
+				//as suggested by Jacobien Carstens
+				if (get_rand_double()<=0.5) {
+					if ( !( MatGet(RN->mat,s1,t2) || MatGet(RN->mat,s2,t1)) && (s1!=t2) &&(s2!=t1) && (s1!=s2) && (t1!=t2) ) {
+						//make the switch
+						//update edges array
+						RN->e_arr[2*i-1].t=t2;
+						RN->e_arr[2*i].s=t2;
+						RN->e_arr[2*j-1].t=t1;
+						RN->e_arr[2*j].s=t1;
+						//update matrix
+						MatAsgn(RN->mat,s1,t1,0);
+						MatAsgn(RN->mat,t1,s1,0);
+						MatAsgn(RN->mat,s2,t2,0);
+						MatAsgn(RN->mat,t2,s2,0);
+						MatAsgn(RN->mat,s1,t2,1);
+						MatAsgn(RN->mat,t2,s1,1);
+						MatAsgn(RN->mat,s2,t1,1);
+						MatAsgn(RN->mat,t1,s2,1);
+						k++;
+					}
+				}else{
+					if ( !( MatGet(RN->mat,s1,s2) || MatGet(RN->mat,t1,t2)) && (s1!=t2) &&(s2!=t1) && (s1!=s2) && (t1!=t2) ) {
+						//make the switch
+						//update edges array
+						RN->e_arr[2*i-1].t=s2;
+						RN->e_arr[2*i].s=s2;
+						RN->e_arr[2*j-1].s=t1;
+						RN->e_arr[2*j].t=t1;
+						//update matrix
+						MatAsgn(RN->mat,s1,t1,0);
+						MatAsgn(RN->mat,t1,s1,0);
+						MatAsgn(RN->mat,s2,t2,0);
+						MatAsgn(RN->mat,t2,s2,0);
+						MatAsgn(RN->mat,s1,s2,1);
+						MatAsgn(RN->mat,s2,s1,1);
+						MatAsgn(RN->mat,t2,t1,1);
+						MatAsgn(RN->mat,t1,t2,1);
+						k++;
+					}
 				}
 			}
 			//update statistics
