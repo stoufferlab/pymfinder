@@ -210,30 +210,6 @@ def randomized_network(mfinderi):
 
     return edges
 
-def print_random_network(edges,outFile=None,sep=" ",header=False):
-    if outFile:
-        fstream = open(outFile,'w')
-    else:
-        fstream = sys.stdout
-
-    if header:
-        output = sep.join(['target',
-                           'source',])
-
-        fstream.write(output + '\n')
-
-    for trg,src,w in sorted(edges):
-        output = sep.join(["%s" % trg,
-                           "%s" % src,
-                           ])
-
-        fstream.write(output + '\n')
-
-    if outFile:
-        fstream.close()
-
-    return
-
 ##############################################################
 ##############################################################
 # MOTIF STRUCTURE CODE
