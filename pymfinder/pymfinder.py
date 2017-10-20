@@ -110,13 +110,6 @@ def mfinder_network_setup(network):
         sys.stderr.write("Uncle Sam frowns upon tax cheats.\n")
         sys.exit()
 
-# DEBUG: This is a function that is not really necessary because the C code should provide the adjacency
-def adjacency(links, size):
-    adj=[[0.0 for x in range(size)] for y in range(size)]
-    for i in links:
-        adj[i[0]-1][i[1]-1]=i[2]
-    return adj
-
 # if we've relabeled the nodes, make sure the output corresponds to the input labels
 def decode_net(edges,node_dictionary):
     reverse_dictionary = dict([(j,i) for i,j in node_dictionary.items()])

@@ -82,27 +82,27 @@ class NetworkStats(object):
         else:
             pass
 
-        possible_roles = []
-        for motif,roles in UNIPARTITE_ROLES[self.motifsize]:
-            possible_roles += [tuple([motif] + list(role)) for role in roles]
+        if self.motifsize == 3 and self.networktype == "unipartite":
+            possible_roles = []
+            for motif,roles in UNIPARTITE_ROLES[self.motifsize]:
+                possible_roles += [tuple([motif] + list(role)) for role in roles]
 
-        for n in self.nodes:
-            if self.motifsize == 3 and self.networktype == "unipartite":
+            for n in self.nodes:
                 self.nodes[n].motifs = dict([(STOUFFER_MOTIF_IDS[id],self.nodes[n].motifs[id]) for id in self.nodes[n].motifs])
                 self.nodes[n].roles = dict([(possible_roles.index(id)+1,self.nodes[n].roles[id]) for id in self.nodes[n].roles])
-            else:
-                pass
+        else:
+            pass
 
-        possible_roles = []
-        for m,r in UNIPARTITE_LINKS_ROLES[self.motifsize]:
-            possible_roles += [tuple([m] + list(x)) for x in r]
+        if self.motifsize == 3 and self.networktype == "unipartite":
+            possible_roles = []
+            for m,r in UNIPARTITE_LINKS_ROLES[self.motifsize]:
+                possible_roles += [tuple([m] + list(x)) for x in r]
 
-        for n in self.links:
-            if self.motifsize == 3 and self.networktype == "unipartite":
+            for n in self.links:
                 self.links[n].motifs = dict([(STOUFFER_MOTIF_IDS[id],self.links[n].motifs[id]) for id in self.links[n].motifs])
                 self.links[n].roles = dict([(possible_roles.index(id)+1,self.links[n].roles[id]) for id in self.links[n].roles])
-            else:
-                pass
+        else:
+            pass
 
     # DEBUG: it would be nice to be able to turn the header on and off
     def __str__(self):
