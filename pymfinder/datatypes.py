@@ -17,7 +17,8 @@ class Motif(object):
         self.random = list()
         self.random_m = None
         self.random_sd = None
-        self.real_z = None        
+        self.real_z = None
+        self.weighted = None
 
     # def __rep__(self):
     #     return(str(self.id))
@@ -47,12 +48,13 @@ class NodeLink(object):
 class NetworkStats(object):
     """NetworkStats summary info class"""
 
-    def __init__(self, motifsize = None, networktype = None):
+    def __init__(self, motifsize = None, networktype = None, weighted = None):
         self.motifs = dict()
         self.nodes = dict()
-	self.links = dict()
+        self.links = dict()
         self.networktype = networktype
         self.motifsize = motifsize
+        self.weighted = weighted
 
     def add_motif(self,motif_id):
         if motif_id in self.motifs:
@@ -114,7 +116,8 @@ class NetworkStats(object):
                                'real',
                                'rand',
                                'srand',
-                               'zscore',]) + '\n'
+                               'zscore',
+                               'weighted',]) + '\n'
 
             # set up the data itself
             for m in sorted(self.motifs.keys()):
@@ -123,6 +126,7 @@ class NetworkStats(object):
                                    "%.3f" % self.motifs[m].random_m,
                                    "%.3f" % self.motifs[m].random_sd,
                                    "%.3f" % self.motifs[m].real_z,
+                                   "%.3f" % self.motifs[m].weighted,
                                   ]) + '\n'
             output = output + '\n'
 

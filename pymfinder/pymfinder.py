@@ -110,6 +110,13 @@ def mfinder_network_setup(network):
         sys.stderr.write("Uncle Sam frowns upon tax cheats.\n")
         sys.exit()
 
+# DEBUG: This is a function that is not really necessary because the C code should provide the adjacency
+def adjacency(links, size):
+    adj=[[0.0 for x in range(size)] for y in range(size)]
+    for i in links:
+        adj[i[0]-1][i[1]-1]=i[2]
+    return adj
+
 # if we've relabeled the nodes, make sure the output corresponds to the input labels
 def decode_net(edges,node_dictionary):
     reverse_dictionary = dict([(j,i) for i,j in node_dictionary.items()])
@@ -221,7 +228,12 @@ def motif_structure(network,
                     nrandomizations = 0,
                     usemetropolis = False,
                     stoufferIDs = None,
+                    weighted = False,
                     ):
+
+    if weighted and nrandomizations > 0:
+        sys.stderr.write("Sorry, randomizations for weighted networks aren't implemented yet.\n")
+        sys.exit()
 
     # initialize the heinous input struct
     web = cmfinder.mfinder_input()
@@ -237,8 +249,18 @@ def motif_structure(network,
     else:
         stats.motifsize = motifsize
 
+	# TODO: Double check this!
     if stats.networktype:
         stats.networktype = "unipartite"
+
+    if stats.weighted!=None:
+        if stats.weighted != weighted:
+            sys.stderr.write("You're trying to mix two different motif analyses.\n")
+            sys.exit()
+    else:
+        stats.weighted = weighted
+        if stats.weighted:
+            stats.adj = adjacency(network, len(node_dict))
 
     # parameterize the analysis
     web.MotifSize = motifsize
@@ -253,7 +275,15 @@ def motif_structure(network,
         stats.motifs = dict()
 
     # determine all nodes' role statistics
-    return motif_stats(web,stats,stoufferIDs)
+    if stats.weighted:
+        if len(stats.motifs) == 0:
+            #TODO why is there a false with stoufferID
+            motif_stats(web,stats,stoufferIDs=False)
+        web.MaxMembersListSz = max([stats.motifs[x].real for x in stats.motifs])+1
+        return weighted_motif_stats(web, network, stats, node_dict, stoufferIDs)
+    else:
+        return motif_stats(web, stats, stoufferIDs)
+
         
 def motif_stats(mfinderi,motif_stats,stoufferIDs):
     results = cmfinder.motif_structure(mfinderi)
@@ -270,6 +300,7 @@ def motif_stats(mfinderi,motif_stats,stoufferIDs):
             motif_stats.motifs[motif_id].random_m = float(motif.rand_mean)
             motif_stats.motifs[motif_id].random_sd = float(motif.rand_std_dev)
             motif_stats.motifs[motif_id].real_z = float(motif.real_zscore)
+            motif_stats.motifs[motif_id].weighted = 0
 
             motif_result = motif_result.next
 
@@ -279,6 +310,44 @@ def motif_stats(mfinderi,motif_stats,stoufferIDs):
         motif_stats.use_stouffer_IDs()
 
     return motif_stats
+
+def weighted_motif_stats(mfinderi, network, motif_stats,node_dict,stoufferIDs):
+
+    results = cmfinder.motif_participation(mfinderi)
+
+    node_dict = dict((v,k) for k,v in node_dict.iteritems())
+
+    _network = set([(i,j) for i,j,k in network])
+
+    r_l = results.l
+    members = cmfinder.intArray(mfinderi.MotifSize)
+    while (r_l != None):
+        motif = cmfinder.get_motif(r_l.p)
+        id = int(motif.id)
+
+        am_l = motif.all_members.l
+        while (am_l != None):
+            cmfinder.get_motif_members(am_l.p, members, mfinderi.MotifSize)
+            py_members = [int(members[i]) for i in xrange(mfinderi.MotifSize)]
+
+            # TODO optimize next line. Ask Daniel for getting edges of a motif
+            py_motif = set([(i,j) for i,j in _network if (i in py_members and j in py_members and i!=j)])
+            weight = sum([motif_stats.adj[m[0]-1][m[1]-1] for m in py_motif])/float(len(py_motif))
+
+            # TODO: Maybe add an attribute called weighted and allow to do both the unweighted and weighted analysis simultaneously!
+            motif_stats.motifs[id].weighted += weight
+
+            am_l = am_l.next
+
+        r_l = r_l.next
+
+    cmfinder.res_tbl_mem_free_single(results)
+
+    if stoufferIDs:
+        motif_stats.use_stouffer_IDs()
+
+    return motif_stats
+
 
 
 ##############################################################
@@ -327,6 +396,7 @@ def motif_participation(network,
     if len(stats.motifs) == 0:
         web.NRandomizations = 0
         web.UseMetropolis = 0
+        #TODO why is there a false with stoufferID
         motif_stats(web,stats,stoufferIDs=False)
 
     web.MaxMembersListSz = max([stats.motifs[x].real for x in stats.motifs])+1
