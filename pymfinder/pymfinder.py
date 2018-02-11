@@ -110,12 +110,16 @@ def mfinder_network_setup(network):
         sys.stderr.write("Uncle Sam frowns upon tax cheats.\n")
         sys.exit()
 
-# DEBUG: This is a function that is not really necessary because the C code should provide the adjacency
+# TODO: This is a function that is not really necessary because the C code should provide the adjacency
 def adjacency(links, size):
     adj=[[0.0 for x in range(size)] for y in range(size)]
     for i in links:
         adj[i[0]-1][i[1]-1]=i[2]
     return adj
+
+# TODO: there must be better ways to write this.
+def list_average(x):
+    return sum(x)/len(x)
 
 # if we've relabeled the nodes, make sure the output corresponds to the input labels
 def decode_net(edges,node_dictionary):
@@ -332,10 +336,11 @@ def weighted_motif_stats(mfinderi, network, motif_stats,node_dict,stoufferIDs):
 
             # TODO optimize next line. Ask Daniel for getting edges of a motif
             py_motif = set([(i,j) for i,j in _network if (i in py_members and j in py_members and i!=j)])
-            weight = sum([motif_stats.adj[m[0]-1][m[1]-1] for m in py_motif])/float(len(py_motif))
 
-            # TODO: Maybe add an attribute called weighted and allow to do both the unweighted and weighted analysis simultaneously!
-            motif_stats.motifs[id].weighted += weight
+            # TODO add functional to choose the way to add the weights
+            weight = [motif_stats.adj[m[0]-1][m[1]-1] for m in py_motif]
+
+            motif_stats.motifs[id].weighted += list_average(weight)
 
             am_l = am_l.next
 
@@ -347,7 +352,6 @@ def weighted_motif_stats(mfinderi, network, motif_stats,node_dict,stoufferIDs):
         motif_stats.use_stouffer_IDs()
 
     return motif_stats
-
 
 
 ##############################################################
