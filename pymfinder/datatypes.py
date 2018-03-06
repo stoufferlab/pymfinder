@@ -37,6 +37,8 @@ class NodeLink(object):
         self.id = nodelink_id
         self.motifs = dict()
         self.roles = dict()
+        self.weighted_roles = dict()
+        self.weighted_motifs = dict()
 
 
 ##############################################################
@@ -170,6 +172,8 @@ class NetworkStats(object):
                 for m in sorted(self.links.keys()):
                     output = output + " ".join([str(m)] + list(map(str,[j for i,j in sorted(self.links[m].roles.items())]))) + '\n'
                 output = output + '\n'
+
+        #TODO Clean all the print functions... it's ugly AF
 
         # return this ghastly beast
         return(output)

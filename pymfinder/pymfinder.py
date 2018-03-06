@@ -118,7 +118,7 @@ def adjacency(links, size):
     return adj
 
 # TODO: there must be better ways to write this.
-def list_average(x):
+def default_fweight(x):
     return sum(x)/len(x)
 
 # if we've relabeled the nodes, make sure the output corresponds to the input labels
@@ -233,11 +233,12 @@ def motif_structure(network,
                     usemetropolis = False,
                     stoufferIDs = None,
                     weighted = False,
+                    fweight = None
                     ):
 
-    if weighted and nrandomizations > 0:
-        sys.stderr.write("Sorry, randomizations for weighted networks aren't implemented yet.\n")
-        sys.exit()
+    #if weighted and nrandomizations > 0:
+    #    sys.stderr.write("Sorry, randomizations for weighted networks aren't implemented yet.\n")
+    #    sys.exit()
 
     # initialize the heinous input struct
     web = cmfinder.mfinder_input()
@@ -260,11 +261,14 @@ def motif_structure(network,
     if stats.weighted!=None:
         if stats.weighted != weighted:
             sys.stderr.write("You're trying to mix two different motif analyses.\n")
-            sys.exit()
+            stats.weighted = weighted
     else:
         stats.weighted = weighted
         if stats.weighted:
             stats.adj = adjacency(network, len(node_dict))
+
+    if fweight==None:
+        fweight = default_fweight
 
     # parameterize the analysis
     web.MotifSize = motifsize
@@ -284,7 +288,7 @@ def motif_structure(network,
             #TODO why is there a false with stoufferID
             motif_stats(web,stats,stoufferIDs=False)
         web.MaxMembersListSz = max([stats.motifs[x].real for x in stats.motifs])+1
-        return weighted_motif_stats(web, network, stats, node_dict, stoufferIDs)
+        return weighted_motif_stats(web, network, stats, stoufferIDs, fweight)
     else:
         return motif_stats(web, stats, stoufferIDs)
 
@@ -315,11 +319,9 @@ def motif_stats(mfinderi,motif_stats,stoufferIDs):
 
     return motif_stats
 
-def weighted_motif_stats(mfinderi, network, motif_stats,node_dict,stoufferIDs):
+def weighted_motif_stats(mfinderi, network, motif_stats, stoufferIDs, fweight):
 
     results = cmfinder.motif_participation(mfinderi)
-
-    node_dict = dict((v,k) for k,v in node_dict.iteritems())
 
     _network = set([(i,j) for i,j,k in network])
 
@@ -340,7 +342,7 @@ def weighted_motif_stats(mfinderi, network, motif_stats,node_dict,stoufferIDs):
             # TODO add functional to choose the way to add the weights
             weight = [motif_stats.adj[m[0]-1][m[1]-1] for m in py_motif]
 
-            motif_stats.motifs[id].weighted += list_average(weight)
+            motif_stats.motifs[id].weighted += fweight(weight)
 
             am_l = am_l.next
 
@@ -366,7 +368,9 @@ def motif_participation(network,
                         randomize = False,
                         usemetropolis = False,
                         stoufferIDs = False,
-                        allmotifs = False
+                        allmotifs = False,
+                        weighted = False,
+                        fweight = None
                         ):
 
 
@@ -374,7 +378,6 @@ def motif_participation(network,
     if randomize:
         #This will restart the whole object
         network = random_network(network, usemetropolis = usemetropolis)
-
 
     # initialize the heinous input struct
     web = cmfinder.mfinder_input()
@@ -393,6 +396,18 @@ def motif_participation(network,
     if stats.networktype:
         stats.networktype = "unipartite"
 
+    if stats.weighted!=None:
+        if stats.weighted != weighted:
+            sys.stderr.write("You're trying to mix two different motif analyses (weighted and not weighted). Be careful!\n")
+            stats.weighted = weighted
+    else:
+        stats.weighted = weighted
+        if stats.weighted:
+            stats.adj = adjacency(network, len(node_dict))
+
+    if fweight==None:
+        fweight = default_fweight
+
     # parameterize the analysis
     web.MotifSize = motifsize
     web.Randomize = 0
@@ -405,6 +420,10 @@ def motif_participation(network,
 
     web.MaxMembersListSz = max([stats.motifs[x].real for x in stats.motifs])+1
 
+    #TODO should I runit here?
+    #if stats.weighted:
+    #    weighted_motif_stats(web,stats,stoufferIDs=False)
+
     #check if this function has already been run
     if len(stats.nodes[stats.nodes.keys()[0]].motifs) != 0:
         for x in stats.nodes.keys():
@@ -413,10 +432,10 @@ def motif_participation(network,
             for x in stats.links.keys():
                 stats.links[x].motifs = dict()
 
-    return participation_stats(web,stats,node_dict,links,stoufferIDs,allmotifs)
+    return participation_stats(web,network,stats,node_dict,links,stoufferIDs,allmotifs,fweight)
 
 
-def participation_stats(mfinderi,participation,node_dict,links,stoufferIDs,allmotifs):
+"""def participation_stats(mfinderi,participation,node_dict,links,stoufferIDs,allmotifs):
     results = cmfinder.motif_participation(mfinderi)
 
     node_dict = dict((v,k) for k,v in node_dict.iteritems())
@@ -482,6 +501,124 @@ def participation_stats(mfinderi,participation,node_dict,links,stoufferIDs,allmo
                     x = participation.links[n].motifs[r]
                 except KeyError:
                     participation.links[n].motifs[r] = 0
+
+    if stoufferIDs:
+        participation.use_stouffer_IDs()
+        
+    return participation"""
+
+
+def participation_stats(mfinderi, network, participation, node_dict, links, stoufferIDs, allmotifs, fweight):
+
+    results = cmfinder.motif_participation(mfinderi)
+
+    node_dict = dict((v,k) for k,v in node_dict.iteritems())
+
+    _network = set([(i,j) for i,j,k in network])
+
+    possible_motifs = set(STOUFFER_MOTIF_IDS.keys())
+    actual_motifs = set([])
+
+    r_l = results.l
+    members = cmfinder.intArray(mfinderi.MotifSize)
+    while (r_l != None):
+        motif = cmfinder.get_motif(r_l.p)
+        id = int(motif.id)
+        actual_motifs.add(id)
+
+        am_l = motif.all_members.l
+        while (am_l != None):
+            cmfinder.get_motif_members(am_l.p, members, mfinderi.MotifSize)
+            py_members = [int(members[i]) for i in xrange(mfinderi.MotifSize)]
+
+            if participation.weighted:
+                # TODO optimize next line. Ask Daniel for getting edges of a motif
+                py_motif = set([(i,j) for i,j in _network if (i in py_members and j in py_members and i!=j)])
+
+                # TODO add functional to choose the way to add the weights
+                weight = [participation.adj[m[0]-1][m[1]-1] for m in py_motif]
+
+                for m in py_members:
+                    try:
+                        participation.nodes[node_dict[m]].motifs[id] += 1
+                    except KeyError:
+                        participation.nodes[node_dict[m]].motifs[id] = 1
+                    try:
+                        participation.nodes[node_dict[m]].weighted_motifs[id] += fweight(weight)
+                    except KeyError:
+                        participation.nodes[node_dict[m]].weighted_motifs[id] = fweight(weight)
+            else:
+                for m in py_members:
+                    try:
+                        participation.nodes[node_dict[m]].motifs[id] += 1
+                    except KeyError:
+                        participation.nodes[node_dict[m]].motifs[id] = 1
+
+            if links:
+                for m, n in combinations(py_members, 2):
+                    if (node_dict[m], node_dict[n]) in participation.links:
+                        try:
+                            participation.links[(node_dict[m], node_dict[n])].motifs[id] += 1
+                        except KeyError:
+                            participation.links[(node_dict[m], node_dict[n])].motifs[id] = 1
+
+                        if participation.weighted:
+                            try:
+                                participation.links[(node_dict[m], node_dict[n])].weighted_motifs[id] += participation.adj[m-1][n-1]
+                            except KeyError:
+                                participation.links[(node_dict[m], node_dict[n])].weighted_motifs[id] = participation.adj[m-1][n-1]
+
+
+                    if (node_dict[n], node_dict[m]) in participation.links:
+                        try:
+                            participation.links[(node_dict[n], node_dict[m])].motifs[id] += 1
+                        except KeyError:
+                            participation.links[(node_dict[n], node_dict[m])].motifs[id] = 1
+
+                        if participation.weighted:
+                            try:
+                                participation.links[(node_dict[n], node_dict[m])].weighted_motifs[id] += participation.adj[n-1][m-1]
+                            except KeyError:
+                                participation.links[(node_dict[n], node_dict[m])].weighted_motifs[id] = participation.adj[n-1][m-1]
+
+
+            am_l = am_l.next
+
+        r_l = r_l.next
+
+    cmfinder.res_tbl_mem_free_single(results)
+
+
+    if not allmotifs:
+        possible_motifs = actual_motifs
+
+
+    for r in possible_motifs:
+        for n in participation.nodes:
+            try:
+                x = participation.nodes[n].motifs[r]
+            except KeyError:
+                participation.nodes[n].motifs[r] = 0
+
+            if participation.weighted:
+                try:
+                    x = participation.nodes[n].weighted_motifs[r]
+                except KeyError:
+                    participation.nodes[n].weighted_motifs[r] = 0
+
+        if links:
+            for n in participation.links:
+                try:
+                    x = participation.links[n].motifs[r]
+                except KeyError:
+                    participation.links[n].motifs[r] = 0
+
+            if participation.weighted:
+                try:
+                    x = participation.links[n].weighted_motifs[r]
+                except KeyError:
+                    participation.links[n].weighted_motifs[r] = 0
+
 
     if stoufferIDs:
         participation.use_stouffer_IDs()

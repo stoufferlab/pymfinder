@@ -10,6 +10,7 @@ class pymfinderTestCase(unittest.TestCase):
 	import sys
 	import os
 	self.test_filename_u = [os.path.dirname(__file__) + "/../pymfinder/data/unipartite-"+str(x)+"-test.net" for x in range(2,4)]
+	self.test_filename_u_w = [os.path.dirname(__file__) + "/../pymfinder/data/unipartite-"+str(x)+"-test-weighted.net" for x in range(2,4)]
 	self.test_filename_b = [os.path.dirname(__file__) + "/../pymfinder/data/bipartite-"+str(x)+"-test.net" for x in range(2,7)]
 
 	for x in range(0,2):
@@ -19,6 +20,15 @@ class pymfinderTestCase(unittest.TestCase):
 				pass
 		except IOError:
 			sys.stderr.write("Cannot find the test network 'unipartite-"+str(x+2)+"-test.net'.\n")
+			sys.exit(1)
+
+	for x in range(0,2):
+		print self.test_filename_u_w[x]
+		try:
+			with open(self.test_filename_u_w[x]) as file:
+				pass
+		except IOError:
+			sys.stderr.write("Cannot find the test network 'unipartite-"+str(x+2)+"-test-weighted.net'.\n")
 			sys.exit(1)
 
 	for x in range(0,5):
@@ -35,6 +45,12 @@ class pymfinderTestCase(unittest.TestCase):
 		result = motif_structure(self.test_filename_u[i], motifsize=i+2, nrandomizations=0)
 		motifs=[result.motifs[n].real for n in result.motifs]
 		self.assertTrue(motifs==[1]*len(motifs))
+
+    """def test_unipartite_motif_weighted_structure(self):
+	for i in range(0,2):
+		result = motif_structure(self.test_filename_u[i], motifsize=i+2, nrandomizations=0, weighted=True)
+		motifs=[result.motifs[n].weighted for n in result.motifs]
+		self.assertTrue(motifs==[1]*len(motifs))"""
 
     def test_unipartite_motif_participation(self):
 	for i in range(0,2):
