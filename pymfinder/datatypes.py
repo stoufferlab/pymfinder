@@ -138,9 +138,15 @@ class NetworkStats(object):
             output = output + '\n'
 
             # set up the data itself
-            for m in sorted(self.nodes.keys()):
-                output = output + " ".join([str(m)] + list(map(str,[j for i,j in sorted(self.nodes[m].motifs.items())]))) + '\n'
-            output = output + '\n'
+            # set up a header
+            if self.weighted:
+                for m in sorted(self.nodes.keys()):
+                    output = output + " ".join([str(m)] + list(map(str,[j for i,j in sorted(self.nodes[m].weighted_motifs.items())]))) + '\n'
+                output = output + '\n'
+            else:
+                for m in sorted(self.nodes.keys()):
+                    output = output + " ".join([str(m)] + list(map(str,[j for i,j in sorted(self.nodes[m].motifs.items())]))) + '\n'
+                output = output + '\n'
 
             if self.links[self.links.keys()[0]].motifs != dict():
                 # set up a header

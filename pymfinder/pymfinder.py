@@ -52,9 +52,9 @@ def relabel_nodes(links,stats=None):
             pass
 
         if s not in node_dict:
-            node_dict[s] = len(node_dict) + 1
+            node_dict[s] = len(node_dict)+1
         if t not in node_dict:
-            node_dict[t] = len(node_dict) + 1
+            node_dict[t] = len(node_dict)+1
 
         links[i] = (node_dict[s], node_dict[t], w)
 
@@ -111,6 +111,7 @@ def mfinder_network_setup(network):
         sys.exit()
 
 # TODO: This is a function that is not really necessary because the C code should provide the adjacency
+
 def adjacency(links, size):
     adj=[[0.0 for x in range(size)] for y in range(size)]
     for i in links:
@@ -125,12 +126,6 @@ def default_fweight(x):
 def decode_net(edges,node_dictionary):
     reverse_dictionary = dict([(j,i) for i,j in node_dictionary.items()])
     return [(reverse_dictionary[i],reverse_dictionary[j],k) for i,j,k in edges]
-
-# if we've relabeled the nodes, make sure the output corresponds to the input labels
-# This should eventually be removed
-def decode_stats(stats,node_dictionary):
-    reverse_dictionary = dict([(j,i) for i,j in node_dictionary.items()])
-    return dict([(reverse_dictionary[i],j) for i,j in stats.items()])
 
 ##############################################################
 ##############################################################
@@ -404,6 +399,7 @@ def motif_participation(network,
         stats.weighted = weighted
         if stats.weighted:
             stats.adj = adjacency(network, len(node_dict))
+            stats.node_dict=node_dict
 
     if fweight==None:
         fweight = default_fweight
@@ -420,7 +416,7 @@ def motif_participation(network,
 
     web.MaxMembersListSz = max([stats.motifs[x].real for x in stats.motifs])+1
 
-    #TODO should I runit here?
+    #TODO should I run this here? Alternatively, I can do it inside participation
     #if stats.weighted:
     #    weighted_motif_stats(web,stats,stoufferIDs=False)
 
@@ -433,79 +429,6 @@ def motif_participation(network,
                 stats.links[x].motifs = dict()
 
     return participation_stats(web,network,stats,node_dict,links,stoufferIDs,allmotifs,fweight)
-
-
-"""def participation_stats(mfinderi,participation,node_dict,links,stoufferIDs,allmotifs):
-    results = cmfinder.motif_participation(mfinderi)
-
-    node_dict = dict((v,k) for k,v in node_dict.iteritems())
-
-    possible_motifs = set(STOUFFER_MOTIF_IDS.keys())
-    actual_motifs = set([])
-
-    r_l = results.l
-    members = cmfinder.intArray(mfinderi.MotifSize)
-    while (r_l != None):
-        motif = cmfinder.get_motif(r_l.p)
-        id = int(motif.id)
-        actual_motifs.add(id)
-
-        am_l = motif.all_members.l
-        while (am_l != None):
-            cmfinder.get_motif_members(am_l.p, members, mfinderi.MotifSize)
-            py_members = [int(members[i]) for i in xrange(mfinderi.MotifSize)]
-
-            for m in py_members:
-                try:
-                    participation.nodes[node_dict[m]].motifs[id] += 1
-                except KeyError:
-                    participation.nodes[node_dict[m]].motifs[id] = 1
-
-            if links:
-                for m, n in combinations(py_members, 2):
-                    if (node_dict[m], node_dict[n]) in participation.links:
-                        try:
-                            participation.links[(node_dict[m], node_dict[n])].motifs[id] += 1
-                        except KeyError:
-                            participation.links[(node_dict[m], node_dict[n])].motifs[id] = 1
-
-                    if (node_dict[n], node_dict[m]) in participation.links:
-                        try:
-                            participation.links[(node_dict[n], node_dict[m])].motifs[id] += 1
-                        except KeyError:
-                            participation.links[(node_dict[n], node_dict[m])].motifs[id] = 1
-
-
-            am_l = am_l.next
-
-        r_l = r_l.next
-
-    cmfinder.res_tbl_mem_free_single(results)
-
-
-
-    if not allmotifs:
-        possible_motifs = actual_motifs
-
-
-    for r in possible_motifs:
-        for n in participation.nodes:
-            try:
-                x = participation.nodes[n].motifs[r]
-            except KeyError:
-                participation.nodes[n].motifs[r] = 0
-
-        if links:
-            for n in participation.links:
-                try:
-                    x = participation.links[n].motifs[r]
-                except KeyError:
-                    participation.links[n].motifs[r] = 0
-
-    if stoufferIDs:
-        participation.use_stouffer_IDs()
-        
-    return participation"""
 
 
 def participation_stats(mfinderi, network, participation, node_dict, links, stoufferIDs, allmotifs, fweight):
@@ -726,6 +649,8 @@ def role_stats(mfinderi,roles,node_dict,network,links,networktype,stoufferIDs,al
         while (am_l != None):
             cmfinder.get_motif_members(am_l.p, members, mfinderi.MotifSize)
             py_members = [int(members[i]) for i in xrange(mfinderi.MotifSize)]
+
+            #TODO remove self-edges and be coherent below
             py_motif = set([(i,j) for i,j in _network if (i in py_members and j in py_members)])
 
             for m in py_members:
@@ -866,8 +791,6 @@ def pymfinder(network,
 
 
     return stats
-
-
 
 ##############################################################
 ##############################################################
