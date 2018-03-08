@@ -171,20 +171,31 @@ class NetworkStats(object):
             output = output+" ".join(["node"]+list(map(str,[role for role in sorted(self.nodes[self.nodes.keys()[0]].roles.keys())])))
             output = output + '\n'
 
-            # set up the data itself
-            for m in sorted(self.nodes.keys()):
-                output = output + " ".join([str(m)] + list(map(str,[j for i,j in sorted(self.nodes[m].roles.items())]))) + '\n'
-            output = output + '\n'
+            if self.weighted:
+                for m in sorted(self.nodes.keys()):
+                    output = output + " ".join([str(self.nodes[m].id)] + list(map(str,[j for i,j in sorted(self.nodes[m].weighted_roles.items())]))) + '\n'
+                output = output + '\n'
+            else:
+                for m in sorted(self.nodes.keys()):
+                    output = output + " ".join([str(self.nodes[m].id)] + list(map(str,[j for i,j in sorted(self.nodes[m].roles.items())]))) + '\n'
+                output = output + '\n'
+
 
             if self.links[self.links.keys()[0]].roles != dict():
                 # set up a header
                 output = output + " ".join(["link"]+list(map(str,sorted(self.links[self.links.keys()[0]].roles.keys()))))
                 output = output + '\n'
 
-                # set up the data itself
-                for m in sorted(self.links.keys()):
-                    output = output + " ".join([str(m)] + list(map(str,[j for i,j in sorted(self.links[m].roles.items())]))) + '\n'
-                output = output + '\n'
+                if self.weighted:
+                    # set up the data itself
+                    for m in sorted(self.links.keys()):
+                        output = output + " ".join([str(self.links[m].id)] + list(map(str,[j for i,j in sorted(self.links[m].weighted_roles.items())]))) + '\n'
+                    output = output + '\n'
+                else:
+                    # set up the data itself
+                    for m in sorted(self.links.keys()):
+                        output = output + " ".join([str(self.links[m].id)] + list(map(str,[j for i,j in sorted(self.links[m].roles.items())]))) + '\n'
+                    output = output + '\n'
 
         #TODO Clean all the print functions... it's ugly AF
 

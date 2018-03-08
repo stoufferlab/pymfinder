@@ -237,7 +237,7 @@ def motif_structure(network,
     else:
         stats.motifsize = motifsize
 
-	# TODO: Double check this!
+    # TODO: Double check this!
     if stats.networktype:
         stats.networktype = "unipartite"
 
@@ -314,9 +314,9 @@ def weighted_motif_stats(mfinderi, motif_stats, stoufferIDs, fweight):
             cmfinder.get_motif_members(am_l.p, members, mfinderi.MotifSize)
             py_members = [int(members[i]) for i in xrange(mfinderi.MotifSize)]
 
-            weight = [motif_stats.links[x].weight for x in permutations(py_members, 2) if x in motif_stats.links]
+            weight = fweight([motif_stats.links[x].weight for x in permutations(py_members, 2) if x in motif_stats.links])
 
-            motif_stats.motifs[id].weighted += fweight(weight)
+            motif_stats.motifs[id].weighted += weight
 
             am_l = am_l.next
 
@@ -427,7 +427,7 @@ def participation_stats(mfinderi, participation, links, stoufferIDs, allmotifs, 
 
             if participation.weighted:
 
-                weight = [participation.links[x].weight for x in permutations(py_members, 2) if x in participation.links]
+                weight = fweight([participation.links[x].weight for x in permutations(py_members, 2) if x in participation.links])
 
                 for m in py_members:
                     try:
@@ -435,9 +435,9 @@ def participation_stats(mfinderi, participation, links, stoufferIDs, allmotifs, 
                     except KeyError:
                         participation.nodes[m].motifs[id] = 1
                     try:
-                        participation.nodes[m].weighted_motifs[id] += fweight(weight)
+                        participation.nodes[m].weighted_motifs[id] += weight
                     except KeyError:
-                        participation.nodes[m].weighted_motifs[id] = fweight(weight)
+                        participation.nodes[m].weighted_motifs[id] = weight
             else:
                 for m in py_members:
                     try:
@@ -455,9 +455,9 @@ def participation_stats(mfinderi, participation, links, stoufferIDs, allmotifs, 
 
                         if participation.weighted:
                             try:
-                                participation.links[m].weighted_motifs[id] += fweight(weight)
+                                participation.links[m].weighted_motifs[id] += weight
                             except KeyError:
-                                participation.links[m].weighted_motifs[id] = fweight(weight)
+                                participation.links[m].weighted_motifs[id] = weight
 
             am_l = am_l.next
 
@@ -516,7 +516,9 @@ def motif_roles(network,
                 usemetropolis = False,
                 stoufferIDs = False,
                 networktype = "unipartite",
-                allroles = False
+                allroles = False,
+                weighted = False,
+                fweight = None
                 ):
 
 
@@ -546,6 +548,15 @@ def motif_roles(network,
     else:
         stats.networktype = networktype
 
+    if stats.weighted!=None:
+        if stats.weighted != weighted:
+            sys.stderr.write("You're trying to mix two different motif analyses (weighted and not weighted). Be careful!\n")
+
+    stats.weighted = weighted
+
+    if fweight==None:
+        fweight = default_fweight
+
     # parameterize the analysis
     web.MotifSize = motifsize
     web.Randomize = 0
@@ -557,6 +568,10 @@ def motif_roles(network,
 
     web.MaxMembersListSz = max([stats.motifs[x].real for x in stats.motifs])+1
 
+    #TODO should I run this here? Alternatively, I can do it inside participation
+    #if stats.weighted:
+    #    weighted_motif_stats(web,stats,stoufferIDs=False)
+
     #check if this function has already been run
     if len(stats.nodes[stats.nodes.keys()[0]].roles) != 0:
         for x in stats.nodes.keys():
@@ -566,10 +581,10 @@ def motif_roles(network,
                 stats.links[x].roles = dict()
 
     # determine all nodes' role statistics
-    return role_stats(web,stats,network,links,networktype,stoufferIDs,allroles)
+    return role_stats(web,stats,links,networktype,stoufferIDs,allroles,fweight)
 
 
-def role_stats(mfinderi,roles,network,links,networktype,stoufferIDs,allroles):
+def role_stats(mfinderi,roles,links,networktype,stoufferIDs,allroles,fweight):
 
     results = cmfinder.motif_participation(mfinderi)
 
@@ -588,8 +603,6 @@ def role_stats(mfinderi,roles,network,links,networktype,stoufferIDs,allroles):
         for m,l in UNIPARTITE_LINKS_ROLES[mfinderi.MotifSize]:
             possible_linkroles.update([tuple([m] + list(x)) for x in l])
 
-
-    _network = set([(i,j) for i,j,k in network])
     
     r_l = results.l
     members = cmfinder.intArray(mfinderi.MotifSize)
@@ -602,12 +615,20 @@ def role_stats(mfinderi,roles,network,links,networktype,stoufferIDs,allroles):
             cmfinder.get_motif_members(am_l.p, members, mfinderi.MotifSize)
             py_members = [int(members[i]) for i in xrange(mfinderi.MotifSize)]
 
-            py_motif = [x for x in permutations(py_members, 2) if x in participation.links]
+            py_motif = [x for x in permutations(py_members, 2) if x in roles.links]
 
-            for m in py_members:
+            if roles.weighted:
+                weight = fweight([roles.links[x].weight for x in py_motif])
+                weight_i = [fweight([roles.links[x].weight for x in py_motif if x[0]==m or x[1]==m]) for m in py_members]
+                weight = weight/float(sum(weight_i))
 
-                npred  = sum([(othernode,m) in py_motif for othernode in py_members if othernode != m])
-                nprey = sum([(m,othernode) in py_motif for othernode in py_members if othernode != m])
+            for idm, m in enumerate(py_members):
+                npred, nprey = 0, 0
+                for othernode in py_members:
+                    if (othernode,m) in py_motif:
+                        npred+=1
+                    if (m,othernode) in py_motif:
+                        nprey+=1
 
                 key = (id, npred, nprey)
 
@@ -635,18 +656,29 @@ def role_stats(mfinderi,roles,network,links,networktype,stoufferIDs,allroles):
                 except KeyError:
                     roles.nodes[m].roles[key] = 1
 
+                if roles.weighted:
+                    try:
+                        roles.nodes[m].weighted_roles[key] += weight_i[idm]*weight
+                    except KeyError:
+                        roles.nodes[m].weighted_roles[key] = weight_i[idm]*weight
+
+
                 actual_roles.add(key)
 
                 if links:
                     for n in py_members:
-                        if n == m:
-                            continue
+                        if n!=m and (n,m) in roles.links: 
+                            npred1,npred2,nprey1,nprey2 = 0,0,0,0
+                            for othernode in py_members:
+                                if (othernode,n) in py_motif:
+                                    npred1+=1
+                                if (n,othernode) in py_motif:
+                                    nprey1+=1
+                                if (othernode,m) in py_motif:
+                                    npred2+=1
+                                if (m,othernode) in py_motif:
+                                    nprey2+=1
 
-                        if (n,m) in roles.links:
-                            npred1  = sum([(othernode,n) in _network for othernode in py_members if othernode != n])
-                            nprey1 = sum([(n,othernode) in _network for othernode in py_members if othernode != n])
-                            npred2  = sum([(othernode,m) in _network for othernode in py_members if othernode != m])
-                            nprey2 = sum([(m,othernode) in _network for othernode in py_members if othernode != m])
                             key = (id, (npred1, nprey1),(npred2, nprey2))
 
                             if key not in possible_linkroles:
@@ -661,6 +693,12 @@ def role_stats(mfinderi,roles,network,links,networktype,stoufferIDs,allroles):
                             except KeyError:
                                 roles.links[(n,m)].roles[key] = 1
 
+                            if roles.weighted:
+                                try:
+                                    roles.links[(n,m)].weighted_roles[key] += weight_i[idm]*weight
+                                except KeyError:
+                                    roles.links[(n,m)].weighted_roles[key] = weight_i[idm]*weight
+
                             actual_linkroles.add(key)
 
             am_l = am_l.next
@@ -671,7 +709,7 @@ def role_stats(mfinderi,roles,network,links,networktype,stoufferIDs,allroles):
 
     if not allroles:
         possible_roles = actual_roles
-	if links:
+        if links:
             possible_linkroles = actual_linkroles
 
 
@@ -682,6 +720,12 @@ def role_stats(mfinderi,roles,network,links,networktype,stoufferIDs,allroles):
             except KeyError:
                 roles.nodes[n].roles[r] = 0
 
+            if roles.weighted:
+                try:
+                    x = roles.nodes[n].weighted_roles[r]
+                except KeyError:
+                    roles.nodes[n].weighted_roles[r] = 0
+
     if links:
         for n in roles.links:
             for r in possible_linkroles:
@@ -690,11 +734,18 @@ def role_stats(mfinderi,roles,network,links,networktype,stoufferIDs,allroles):
                 except KeyError:
                     roles.links[n].roles[r] = 0
 
+                if roles.weighted:
+                    try:
+                        x = roles.links[n].weighted_roles[r]
+                    except KeyError:
+                        roles.links[n].weighted_roles[r] = 0
+
 
     if stoufferIDs:
         roles.use_stouffer_IDs()
 
     return roles
+
 
 
 ##############################################################
