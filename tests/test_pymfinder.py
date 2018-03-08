@@ -57,14 +57,14 @@ class pymfinderTestCase(unittest.TestCase):
             check_rows=[sum(x) for x in roles]==[1]*len(result.nodes) # Check that each node is in only one motif
             self.assertTrue(check_columns and check_rows)
 
-    """def test_unipartite_motif_weighted_participation(self):
+    def test_unipartite_motif_weighted_participation(self):
         for i in range(0,2):
             result = motif_participation(self.test_filename_u[i], motifsize=i+2, weighted=True)
             all_roles = result.nodes[result.nodes.keys()[0]].weighted_motifs.keys()
             roles=[[int(result.nodes[n].weighted_motifs[r]) for r in all_roles] for n in result.nodes]
-            check_columns=[sum(x)/i for x in zip(*roles)]==all_roles # Check the number of nodes in each motif
-            check_rows=[sum(x) for x in roles]==[1]*len(result.nodes) # Check that each node is in only one motif
-            self.assertTrue(check_columns and check_rows)"""
+            check_columns=[sum(x)/(i+2) for x in zip(*roles)]==all_roles # Check the number of nodes in each motif
+            check_rows=[sum(x) for x in roles]==[int(result.nodes[x].id[:-1]) for x in result.nodes] # Check that each node is in only one motif
+            self.assertTrue(check_columns and check_rows)
 
     def test_unipartite_link_participation(self):
         for i in range(0,2):
