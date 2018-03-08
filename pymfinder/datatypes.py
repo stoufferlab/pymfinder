@@ -64,17 +64,17 @@ class NetworkStats(object):
         else:
             self.motifs[motif_id] = Motif(motif_id)
 
-    def add_node(self,node_id):
+    def add_node(self, node_id, node_name=None):
         if node_id in self.nodes:
             sys.stderr.write("You're trying to add a node more than once. According to the developers, this is classified as highly unusual.\n")
         else:
-            self.nodes[node_id] = NodeLink(node_id)
+            self.nodes[node_id] = NodeLink(node_name)
 
-    def add_link(self,link_id):
+    def add_link(self, link_id, link_name=None):
         if link_id in self.links:
             sys.stderr.write("You're trying to add a link more than once. According to the developers, this is classified as highly unusual.\n")
         else:
-            self.links[link_id] = NodeLink(link_id)
+            self.links[link_id] = NodeLink(link_name)
 
     def use_stouffer_IDs(self):
         from roles import STOUFFER_MOTIF_IDS, UNIPARTITE_ROLES, UNIPARTITE_LINKS_ROLES
@@ -141,11 +141,11 @@ class NetworkStats(object):
             # set up a header
             if self.weighted:
                 for m in sorted(self.nodes.keys()):
-                    output = output + " ".join([str(m)] + list(map(str,[j for i,j in sorted(self.nodes[m].weighted_motifs.items())]))) + '\n'
+                    output = output + " ".join([str(self.nodes[m].id)] + list(map(str,[j for i,j in sorted(self.nodes[m].weighted_motifs.items())]))) + '\n'
                 output = output + '\n'
             else:
                 for m in sorted(self.nodes.keys()):
-                    output = output + " ".join([str(m)] + list(map(str,[j for i,j in sorted(self.nodes[m].motifs.items())]))) + '\n'
+                    output = output + " ".join([str(self.nodes[m].id)] + list(map(str,[j for i,j in sorted(self.nodes[m].motifs.items())]))) + '\n'
                 output = output + '\n'
 
             if self.links[self.links.keys()[0]].motifs != dict():
@@ -153,10 +153,17 @@ class NetworkStats(object):
                 output = output + " ".join(["link"]+list(map(str,sorted(self.links[self.links.keys()[0]].motifs.keys()))))
                 output = output + '\n'
 
-                # set up the data itself
-                for m in sorted(self.links.keys()):
-                    output = output + " ".join([str(m)] + list(map(str,[j for i,j in sorted(self.links[m].motifs.items())]))) + '\n'
-                output = output + '\n'
+                if self.weighted:
+                    # set up the data itself
+                    for m in sorted(self.links.keys()):
+                        output = output + " ".join([str(self.links[m].id)] + list(map(str,[j for i,j in sorted(self.links[m].weighted_motifs.items())]))) + '\n'
+                    output = output + '\n'
+                else:
+                    # set up the data itself
+                    for m in sorted(self.links.keys()):
+                        output = output + " ".join([str(self.links[m].id)] + list(map(str,[j for i,j in sorted(self.links[m].motifs.items())]))) + '\n'
+                    output = output + '\n'
+
 
         if self.nodes[self.nodes.keys()[0]].roles != dict():
             # set up a header
