@@ -618,9 +618,9 @@ def role_stats(mfinderi,roles,links,networktype,stoufferIDs,allroles,fweight):
             py_motif = [x for x in permutations(py_members, 2) if x in roles.links]
 
             if roles.weighted:
-                weight = fweight([roles.links[x].weight for x in py_motif])
+                weight_motif = fweight([roles.links[x].weight for x in py_motif])
                 weight_i = [fweight([roles.links[x].weight for x in py_motif if x[0]==m or x[1]==m]) for m in py_members]
-                weight = weight/float(sum(weight_i))
+                weight = weight_motif/float(sum(weight_i))
 
             for idm, m in enumerate(py_members):
                 npred, nprey = 0, 0
@@ -695,9 +695,9 @@ def role_stats(mfinderi,roles,links,networktype,stoufferIDs,allroles,fweight):
 
                             if roles.weighted:
                                 try:
-                                    roles.links[(n,m)].weighted_roles[key] += weight_i[idm]*weight
+                                    roles.links[(n,m)].weighted_roles[key] += weight_motif
                                 except KeyError:
-                                    roles.links[(n,m)].weighted_roles[key] = weight_i[idm]*weight
+                                    roles.links[(n,m)].weighted_roles[key] = weight_motif
 
                             actual_linkroles.add(key)
 
