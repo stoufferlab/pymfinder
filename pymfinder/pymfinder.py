@@ -602,8 +602,7 @@ def role_stats(mfinderi,roles,network,links,networktype,stoufferIDs,allroles):
             cmfinder.get_motif_members(am_l.p, members, mfinderi.MotifSize)
             py_members = [int(members[i]) for i in xrange(mfinderi.MotifSize)]
 
-            #TODO remove self-edges and be coherent below
-            py_motif = set([(i,j) for i,j in _network if (i in py_members and j in py_members)])
+            py_motif = [x for x in permutations(py_members, 2) if x in participation.links]
 
             for m in py_members:
 
