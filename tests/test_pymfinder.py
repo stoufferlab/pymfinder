@@ -45,7 +45,7 @@ class pymfinderTestCase(unittest.TestCase):
     def test_unipartite_motif_weighted_structure(self):
         for i in range(0,2):
             result = motif_structure(self.test_filename_u[i], motifsize=i+2, nrandomizations=0, weighted=True)
-            motifs=[int(result.motifs[n].weighted)==n for n in result.motifs.keys()]
+            motifs=[int(result.motifs[n].weight)==n for n in result.motifs.keys()]
             self.assertTrue(all(motifs))
 
     def test_unipartite_motif_participation(self):

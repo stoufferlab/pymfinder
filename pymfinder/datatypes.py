@@ -18,7 +18,10 @@ class Motif(object):
         self.random_m = None
         self.random_sd = None
         self.real_z = None
-        self.weighted = None
+        self.weight = None
+        self.weight_m = None
+        self.weight_ma = None
+        self.weight_mi = None
 
     # def __rep__(self):
     #     return(str(self.id))
@@ -119,7 +122,8 @@ class NetworkStats(object):
                                'rand',
                                'srand',
                                'zscore',
-                               'weighted',]) + '\n'
+                               'weight',
+                               'median-weight',]) + '\n'
 
             # set up the data itself
             for m in sorted(self.motifs.keys()):
@@ -128,7 +132,8 @@ class NetworkStats(object):
                                    "%.3f" % self.motifs[m].random_m,
                                    "%.3f" % self.motifs[m].random_sd,
                                    "%.3f" % self.motifs[m].real_z,
-                                   "%.3f" % self.motifs[m].weighted,
+                                   "%.3f" % self.motifs[m].weight,
+                                   "%.3f" % self.motifs[m].weight_m,
                                   ]) + '\n'
             output = output + '\n'
 

@@ -2,9 +2,10 @@
 import mfinder.mfinder as cmfinder
 import sys
 from itertools import combinations, permutations
-
+from math import sqrt
 from roles import *
 from datatypes import *
+import numpy as np
 
 ##############################################################
 ##############################################################
@@ -114,6 +115,19 @@ def mfinder_network_setup(network):
 
 def default_fweight(x):
     return sum(x)/len(x)
+
+
+def confidence_interval(data, confidence=0.89):
+    av=np.median(data)
+    m=np.mean(data)
+    n=len(data)
+    if n==1:
+        return data[0], data[0],data[0],data[0]
+    n_data=np.sort(data)
+    mi=n_data[int(round(n*(1-confidence)))]
+    ma=n_data[int(round(n*confidence)-1)]
+    return av, m, mi, ma
+
 
 ##############################################################
 ##############################################################
@@ -288,7 +302,10 @@ def motif_stats(mfinderi,motif_stats,stoufferIDs):
             motif_stats.motifs[motif_id].random_m = float(motif.rand_mean)
             motif_stats.motifs[motif_id].random_sd = float(motif.rand_std_dev)
             motif_stats.motifs[motif_id].real_z = float(motif.real_zscore)
-            motif_stats.motifs[motif_id].weighted = 0
+            motif_stats.motifs[motif_id].weight = 0.0
+            motif_stats.motifs[motif_id].weight_m = 0.0
+            motif_stats.motifs[motif_id].weight_ma = 0.0
+            motif_stats.motifs[motif_id].weight_mi = 0.0
 
             motif_result = motif_result.next
 
@@ -302,12 +319,14 @@ def motif_stats(mfinderi,motif_stats,stoufferIDs):
 def weighted_motif_stats(mfinderi, motif_stats, stoufferIDs, fweight):
 
     results = cmfinder.motif_participation(mfinderi)
+    CI={}
 
     r_l = results.l
     members = cmfinder.intArray(mfinderi.MotifSize)
     while (r_l != None):
         motif = cmfinder.get_motif(r_l.p)
         id = int(motif.id)
+        CI[id]=[]
 
         am_l = motif.all_members.l
         while (am_l != None):
@@ -316,13 +335,19 @@ def weighted_motif_stats(mfinderi, motif_stats, stoufferIDs, fweight):
 
             weight = fweight([motif_stats.links[x].weight for x in permutations(py_members, 2) if x in motif_stats.links])
 
-            motif_stats.motifs[id].weighted += weight
+            #motif_stats.motifs[id].weight += weight
+            #motif_stats.motifs[id].weight_sd += weight**2
+            CI[id] += [weight]
 
             am_l = am_l.next
 
         r_l = r_l.next
 
     cmfinder.res_tbl_mem_free_single(results)
+
+    for motif_id in motif_stats.motifs:
+        if motif_stats.motifs[motif_id].real>0:
+            motif_stats.motifs[motif_id].weight, motif_stats.motifs[motif_id].weight_m, motif_stats.motifs[motif_id].weight_mi, motif_stats.motifs[motif_id].weight_ma = confidence_interval(CI[motif_id])
 
     if stoufferIDs:
         motif_stats.use_stouffer_IDs()
