@@ -63,11 +63,11 @@ $^2$Department of Physics, Chemistry, and Biology (IFM), Link\"{o}ping Universit
 
 		\subsubsection{Installation}
 
-			Installation within a command-line terminal should be straightforward using the function 'setup.py' included in the \emph{pymfinder} package. After navigating to the directory containing the package, run:
+			Installation within a command-line terminal should be straightforward using the function `setup.py' included in the \emph{pymfinder} package. After navigating to the directory containing the package, run:
 
 			\textbf{python setup.py install}
 
-			If an error message of 'Permission denied' or similar is returned, run:
+			If an error message of `Permission denied' or similar is returned, run:
 
 			\textbf{python setup.py install --user}
 
@@ -90,7 +90,7 @@ $^2$Department of Physics, Chemistry, and Biology (IFM), Link\"{o}ping Universit
 
 		\subsection{Input file format}
 
-			Input network file format should be in simple '.txt' format. Species names may be given as text or integers but should \textbf{not} include spaces. Each edge should be represented by a line of the following format:
+			Input network file format should be in simple `.txt' format. Species names may be given as text or integers but should \textbf{not} include spaces. Each edge should be represented by a line of the following format:
 
 			\textbf{\textless source node\textgreater  \textless target node\textgreater}
 
@@ -127,10 +127,10 @@ $^2$Department of Physics, Chemistry, and Biology (IFM), Link\"{o}ping Universit
 	              nrandomizations = 0,\\
 	              randomize = False,\\
 	              usemetropolis = False,\\
-	              networktype = "unipartite")}.\\
+	              networktype = ``unipartite")}.\\
 
 
-			The pymfinder function call includes the following arguments:
+			The \emph{pymfinder} function call includes the following arguments:
 
      	\begin{itemize}
 
@@ -154,9 +154,24 @@ $^2$Department of Physics, Chemistry, and Biology (IFM), Link\"{o}ping Universit
 
 			\end{itemize}
 
+
+		\subsubsection{Functions}
+
+			The \emph{pymfinder} function call references three subordinate functions: \emph{motif_structure}, \emph{motif_participation}, and \emph{motif_roles}. Each subordinate function may also be called independently if the full output from \emph{pymfinder} is not required. When \emph{pymfinder} is called, the subordinate functions are run in order (\emph{motif_structure} then \emph{motif_participation} then \emph{motif_roles}). If a subordinate function is called directly, any preceding function will also be called. That is, calling \emph{motif_structure} returns only the motif structure output but calling \emph{motif_participation} returns the motif participation and motif structure output. Note that the three functions differ in the way in which they handle interaction weights.
+
+
+			\emph{motif_structure} calculates the motif profile of the network. Arguments passable to \emph{motif_structure} are the same as those for \emph{pymfinder}, except that the \textbf{links} argument is not relevant. The same motif profile will be returned whether or not \textbf{links=True}. [[how are weights handled?]]
+
+
+			\emph{motif_participation} calculates the motif participation for each node (and each link, if \textbf{links=True}). All arguments passable to \emph{motif_participation} are the same as those passed to \emph{pymfinder}.[[how are weights handled?]]
+
+
+			\emph{motif_roles} calculates the role of each node (and each link, if \textbf{links=True}). All arguments passable to \emph{motif_roles} are the same as those passed to \emph{pymfinder}.[[how are weights handled?]]
+
+
 		\subsubsection{Output}
 
-			The object 'results' returned by \emph{pymfinder} is a NetworkStats object containing dictionaries of motifs, nodes, and links as well as the network type (uniparite or bipartite) and the size of motifs used. The value for each motif in the .motifs dictionary is an Motif object containing the motif profile for that motif. Similarly, the value for each node or link in the .nodes or .links dictionaries is a NodeLink object containing the motif participation or role of that node or link.
+			The object `results' returned by \emph{pymfinder} is a NetworkStats object containing dictionaries of motifs, nodes, and links as well as the network type (uniparite or bipartite) and the size of motifs used. The value for each motif in the .motifs dictionary is an Motif object containing the motif profile for that motif. Similarly, the value for each node or link in the .nodes or .links dictionaries is a NodeLink object containing the motif participation or role of that node or link.
 
 
 			These results can be collected into text-formatted tables and may be seen using:
@@ -186,9 +201,6 @@ $^2$Department of Physics, Chemistry, and Biology (IFM), Link\"{o}ping Universit
 
 			[[Would examples of these tables be helpful to include as figures?]]
 
-\section{Algorithms}
-
-	[[I think the manuscript describes the algorithms rather well. Do we actually need this?]]
 
 \section{Figures}
 
