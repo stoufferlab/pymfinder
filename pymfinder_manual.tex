@@ -42,7 +42,7 @@ $^2$Department of Physics, Chemistry, and Biology (IFM), Link\"{o}ping Universit
 
 \section{General information}
 
-	\textbf{Description:} \textit{pymfinder} is a Python package designed to detect motifs in complex networks and define the roles of nodes and links using these motifs. Unipartite networks can be analysed using three-species motifs and bipartite networks can be analysed using motifs containin up to six species. Both weighted and binary networks can be analyzed. At its core, \emph{pymfinder} is a combination of Python methods for network-motif analysis as well as a Python wrapper for the original mfinder version 1.2 written in C and available at \emph{http://www.weizmann.ac.il/mcb/UriAlon/}~\citep{Alonwebsite}. This code has been included and modified here with the explicit consent of Nadav Kashtan, the author of mfinder 1.2.
+	\textbf{Description:} \textit{pymfinder} is a Python package designed to detect motifs in complex networks and define the roles of nodes and links using these motifs. Unipartite networks can be analysed using three-species motifs and bipartite networks can be analysed using motifs containin up to six species. Both weighted and binary networks can be analyzed. At its core, \emph{pymfinder} is a combination of Python methods for network-motif analysis as well as a Python wrapper for the original \emph{mfinder} version 1.2 written in C and available at \emph{http://www.weizmann.ac.il/mcb/UriAlon/}~\citep{Alonwebsite}. This code has been included and modified here with the explicit consent of Nadav Kashtan, the author of mfinder 1.2.
 
 	\textbf{Copyrights:} TBD
 
@@ -136,21 +136,21 @@ $^2$Department of Physics, Chemistry, and Biology (IFM), Link\"{o}ping Universit
 
      		\item \textbf{network}: Network path. Must be in quotation marks. No default given.
 
-				\item \textbf{links}: Determines whether or not to calculate statistics for links as well as nodes. If \textbf{links = True}, link participation and roles will be calculated. Defaults to \textbf{links = False}.
+				\item \textbf{links}: Determines whether or not to calculate statistics for links as well as nodes. If \textbf{links=True}, link participation and roles will be calculated. Defaults to \textbf{links=False}.
 
-				\item \textbf{motifsize}: Size of motifs to be calculated. Defined for motifsize=3 for unipartite networks and 3$\leq$motifsize$\leq$6 for bipartite networks. Defaults to \textbf{motifsize = 3}.
+				\item \textbf{motifsize}: Size of motifs to be calculated. Defined for motifsize=3 for unipartite networks and 3$\leq$motifsize$\leq$6 for bipartite networks. Defaults to \textbf{motifsize=3}.
 
-				\item \textbf{stoufferIDs}: Determines whether to label motifs following~\citet{StoufferIDpaper} or~\citet{Numberpaper}. If \textbf{stoufferIDs = True}, labels will be as in~\citet{StoufferIDpaper}. Defaults to \textbf{stoufferIDs = False}.
+				\item \textbf{stoufferIDs}: Determines whether to label motifs following~\citet{Stouffer2007} or based on the representation of the adjacency matrix of the motif as a binary integer, following the original \emph{mfinder}. If \textbf{stoufferIDs=True}, labels will be as in~\citet{Stouffer2007}. Defaults to \textbf{stoufferIDs=False}.
 
-				\item \textbf{allmotifs}: Not sure what this does. Defaults to \textbf{allmotifs = False}.
+				\item \textbf{allmotifs}: If true, displays results for all possible motifs regardless of whether all have been observed. If false, displays only results for motifs observed in the network. Defaults to \textbf{allmotifs=False}.
 
 				\item \textbf{nrandomizations}: Number of random networks with which to compare the observed network. Defaults to 0 (no randomizations performed).
 
-				\item \textbf{randomize}: Determines whether to conduct the randomizaiton analysis. If false, no randomizations will be conducted regardless of the value given to \textbf{nrandomizations}. Defaults to \textbf{randomize = False}.
+				\item \textbf{randomize}: Determines whether to conduct the randomizaiton analysis. If false, no randomizations will be conducted regardless of the value given to \textbf{nrandomizations}. Defaults to \textbf{randomize=False}.
 
 				\item \textbf{usemetropolis}: If randomizations are to be performed, determines whether to use the Metropolis algorithm. If Metropolis is not used, \emph{pymfinder} uses an MCMC algorithm to shuffle the original network while preserving in- and out-degrees of nodes. Defaults to \textbf{usemetropolis=False} (MCMC-based randomizations).
 
-				\item \textbf{networktype}: Indicates whether the network is unipartite (all species may interact with all other species) or bipartite (species are divided into two groups and may interact between groups but not within a group). Defaults to \textbf{networktype = unipartite}.
+				\item \textbf{networktype}: Indicates whether the network is unipartite (all species may interact with all other species) or bipartite (species are divided into two groups and may interact between groups but not within a group). Defaults to \textbf{networktype=``unipartite''}.
 
 			\end{itemize}
 
@@ -174,7 +174,6 @@ $^2$Department of Physics, Chemistry, and Biology (IFM), Link\"{o}ping Universit
 			If \textbf{links=False}, the results include three tables. The first presents the motif profile of the network. Each row gives a motif ID, the count of that motif in the observed network, the mean and standard deviation of the count of that motif in the randomized netowrks, and the $Z$-score comparing the real network to the randomized networks. If \textbf{ranodmizations=False}, the random mean and standard deviations will be reported as 0.000 and the $Z$-score will be given as 888888.000.
 
 
-
 			The second table presents the motif participation for each node in the network. Each row gives a node ID and the number of times the node appears in each motif. Motif ID's are given in the first row.
 
 
@@ -184,16 +183,23 @@ $^2$Department of Physics, Chemistry, and Biology (IFM), Link\"{o}ping Universit
 			If \textbf{links=True}, the results will also contain tables presenting links' motif participation and roles. Links' motif participation follows nodes' motif participation and link roles follow node roles. In both cases, the format of the output table echoes that of the node tables. The only notable difference is in the labelling of link positions. Rather than (motif ID, number of out links, number of in links), link positions are labelled (motif ID, (out links for node 1, in links for node 1), (out links for node 2, in links for node 2)) where nodes 1 and 2 are the two species connected by link (1,2).
 
 
-			[[Would examples of these tables be helpful to include as figures?]]
-
-\section{Algorithms}
-
-	[[I think the manuscript describes the algorithms rather well. Do we actually need this?]]
-
 \section{Figures}
 
+	\begin{figure}[h!]
+		\label{3sp_unipartite}
+		\caption{The thirteen three-species motifs in unipartite networks. The 30 unique positions are numbered, but note that positions are not in the same order as in the output provided by motif\_roles. [[Recommend we change one or the other, so that they match]] Note also that some motifs contain three unique positions (e.g., positions 5, 6, and 7) while other motifs contain only one or two unique positions.}
+		\includegraphics*[width=\textwidth]{unipartite_motifs.eps}
+	\end{figure}
 
-	[[Which ones do we want? I assume the three-species unipartite and 2-6 species bipartite, with positions labelled. Any others? Maybe one giving the StoufferIDs and numerical IDs for three-species motifs.]]
+
+	\begin{figure}[h!]
+		\label{bipartite_motifs}
+		\caption{The singe two-species motif, two three-species motifs, four four-species motifs, 10 five-species motifs, and 27 six-species motifs that can be found in bipartite networks. Unique positions are numbered, but note that positions are not in the same order as in the output provided by motif\_roles. If the identity of particular motifs and/or positions is important, be sure to note the motif number and position information provided in the output file.}
+		\includegraphics*[width=\textwidth]{bipartite_motifs.eps}
+	\end{figure}
+
+\bibliographystyle{jae}
+\bibliography{biblist}
 
 
 \end{document}
