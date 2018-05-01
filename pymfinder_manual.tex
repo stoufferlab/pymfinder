@@ -42,7 +42,7 @@ $^2$Department of Physics, Chemistry, and Biology (IFM), Link\"{o}ping Universit
 
 \section{General information}
 
-	\textbf{Description:} \textit{pymfinder} is a Python package designed to detect motifs in complex networks and define the roles of nodes and links using these motifs. Unipartite networks can be analysed using three-species motifs and bipartite networks can be analysed using motifs containin up to six species. Both weighted and binary networks can be analyzed. At its core, \emph{pymfinder} is a combination of Python methods for network-motif analysis as well as a Python wrapper for the original \emph{mfinder} version 1.2 written in C and available at \emph{http://www.weizmann.ac.il/mcb/UriAlon/}~\citep{Alonwebsite}. This code has been included and modified here with the explicit consent of Nadav Kashtan, the author of mfinder 1.2.
+	\textbf{Description:} \textit{pymfinder} is a Python package designed to detect motifs in complex networks and define the roles of nodes and links using these motifs. Unipartite networks can be analyzed using three-species motifs and bipartite networks can be analyzed using motifs containing up to six species. Both weighted and binary networks can be analyzed. At its core, \emph{pymfinder} is a combination of Python methods for network-motif analysis as well as a Python wrapper for the original \emph{mfinder} version 1.2 written in C and available at \emph{http://www.weizmann.ac.il/mcb/UriAlon/}~\citep{Alonwebsite}. This code has been included and modified here with the explicit consent of Nadav Kashtan, the author of mfinder 1.2.
 
 	\textbf{Copyrights:} TBD
 
@@ -63,11 +63,11 @@ $^2$Department of Physics, Chemistry, and Biology (IFM), Link\"{o}ping Universit
 
 		\subsubsection{Installation}
 
-			Installation within a command-line terminal should be straightforward using the function 'setup.py' included in the \emph{pymfinder} package. After navigating to the directory containing the package, run:
+			Installation within a command-line terminal should be straightforward using the function `setup.py' included in the \emph{pymfinder} package. After navigating to the directory containing the package, run:
 
 			\textbf{python setup.py install}
 
-			If an error message of 'Permission denied' or similar is returned, run:
+			If an error message of `Permission denied' or similar is returned, run:
 
 			\textbf{python setup.py install --user}
 
@@ -81,16 +81,13 @@ $^2$Department of Physics, Chemistry, and Biology (IFM), Link\"{o}ping Universit
 
 			\textbf{python setup.py test}
 
-			% Does not work on Mac, going to test on James' linux build.
-			% Seems to be some form of XCode error
 
-
-	\subsection{Basic useage}
+	\subsection{Basic usage}
 
 
 		\subsection{Input file format}
 
-			Input network file format should be in simple '.txt' format. Species names may be given as text or integers but should \textbf{not} include spaces. Each edge should be represented by a line of the following format:
+			Input network file format should be in simple `.txt' format. Species names may be given as text or integers but should \textbf{not} include spaces. Each edge should be represented by a line of the following format:
 
 			\textbf{\textless source node\textgreater  \textless target node\textgreater}
 
@@ -127,10 +124,10 @@ $^2$Department of Physics, Chemistry, and Biology (IFM), Link\"{o}ping Universit
 	              nrandomizations = 0,\\
 	              randomize = False,\\
 	              usemetropolis = False,\\
-	              networktype = "unipartite")}.\\
+	              networktype = ``unipartite")}.\\
 
 
-			The pymfinder function call includes the following arguments:
+			The \emph{pymfinder} function call includes the following arguments:
 
      	\begin{itemize}
 
@@ -138,7 +135,7 @@ $^2$Department of Physics, Chemistry, and Biology (IFM), Link\"{o}ping Universit
 
 				\item \textbf{links}: Determines whether or not to calculate statistics for links as well as nodes. If \textbf{links=True}, link participation and roles will be calculated. Defaults to \textbf{links=False}.
 
-				\item \textbf{motifsize}: Size of motifs to be calculated. Defined for motifsize=3 for unipartite networks and 3$\leq$motifsize$\leq$6 for bipartite networks. Defaults to \textbf{motifsize=3}.
+				\item \textbf{motifsize}: Size of motifs to be calculated. Defined for motifsize=3 for unipartite networks and 3$\leq$motifsize$\leq$6 for bipartite networks. Defaults to \textbf{motifsize=3}. There are 13 possible three-species motifs for unipartite networks (Fig.~\ref{3sp_unipartite}). For bipartite networks, there are only four three-species motifs (Fig.~\ref{bipartite_motifs}) and a larger motif size may be necessary.
 
 				\item \textbf{stoufferIDs}: Determines whether to label motifs following~\citet{Stouffer2007} or based on the representation of the adjacency matrix of the motif as a binary integer, following the original \emph{mfinder}. If \textbf{stoufferIDs=True}, labels will be as in~\citet{Stouffer2007}. Defaults to \textbf{stoufferIDs=False}.
 
@@ -146,7 +143,7 @@ $^2$Department of Physics, Chemistry, and Biology (IFM), Link\"{o}ping Universit
 
 				\item \textbf{nrandomizations}: Number of random networks with which to compare the observed network. Defaults to 0 (no randomizations performed).
 
-				\item \textbf{randomize}: Determines whether to conduct the randomizaiton analysis. If false, no randomizations will be conducted regardless of the value given to \textbf{nrandomizations}. Defaults to \textbf{randomize=False}.
+				\item \textbf{randomize}: Determines whether to conduct the randomization analysis. If false, no randomizations will be conducted regardless of the value given to \textbf{nrandomizations}. Defaults to \textbf{randomize=False}.
 
 				\item \textbf{usemetropolis}: If randomizations are to be performed, determines whether to use the Metropolis algorithm. If Metropolis is not used, \emph{pymfinder} uses an MCMC algorithm to shuffle the original network while preserving in- and out-degrees of nodes. Defaults to \textbf{usemetropolis=False} (MCMC-based randomizations).
 
@@ -154,9 +151,24 @@ $^2$Department of Physics, Chemistry, and Biology (IFM), Link\"{o}ping Universit
 
 			\end{itemize}
 
+
+		\subsubsection{Functions}
+
+			The \emph{pymfinder} function call references three subordinate functions: \emph{motif\_structure}, \emph{motif\_participation}, and \emph{motif\_roles}. Each subordinate function may also be called independently if the full output from \emph{pymfinder} is not required. When \emph{pymfinder} is called, the subordinate functions are run in order (\emph{motif\_structure} then \emph{motif\_participation} then \emph{motif\_roles}). If a subordinate function is called directly, any preceding function will also be called. That is, calling \emph{motif\_structure} returns only the motif structure output but calling \emph{motif\_participation} returns the motif participation and motif structure output. Note that the three functions differ in the way in which they handle interaction weights.
+
+
+			\emph{motif\_structure} calculates the motif profile of the network. Arguments passable to \emph{motif\_structure} are the same as those for \emph{pymfinder}, except that the \textbf{links} argument is not relevant. The same motif profile will be returned whether or not \textbf{links=True}. [[how are weights handled?]]
+
+
+			\emph{motif\_participation} calculates the motif participation for each node (and each link, if \textbf{links=True}). All arguments passable to \emph{motif\_participation} are the same as those passed to \emph{pymfinder}.[[how are weights handled?]]
+
+
+			\emph{motif\_roles} calculates the role of each node (and each link, if \textbf{links=True}). All arguments passable to \emph{motif\_roles} are the same as those passed to \emph{pymfinder}.[[how are weights handled?]]
+
+
 		\subsubsection{Output}
 
-			The object 'results' returned by \emph{pymfinder} is a NetworkStats object containing dictionaries of motifs, nodes, and links as well as the network type (uniparite or bipartite) and the size of motifs used. The value for each motif in the .motifs dictionary is an Motif object containing the motif profile for that motif. Similarly, the value for each node or link in the .nodes or .links dictionaries is a NodeLink object containing the motif participation or role of that node or link.
+			The object `results' returned by \emph{pymfinder} is a NetworkStats object containing dictionaries of motifs, nodes, and links as well as the network type (unipartite or bipartite) and the size of motifs used. The value for each motif in the .motifs dictionary is an Motif object containing the motif profile for that motif. Similarly, the value for each node or link in the .nodes or .links dictionaries is a NodeLink object containing the motif participation or role of that node or link.
 
 
 			These results can be collected into text-formatted tables and may be seen using:
@@ -165,23 +177,24 @@ $^2$Department of Physics, Chemistry, and Biology (IFM), Link\"{o}ping Universit
 
 			or written to a file using:
 
-			\textbf{f=open('filename','w')\\
+			\textbf{f=open(`filename',`w')\\
 					f.write(str(results))\\
 					f.close()}\\
 			\medskip
 
 
-			If \textbf{links=False}, the results include three tables. The first presents the motif profile of the network. Each row gives a motif ID, the count of that motif in the observed network, the mean and standard deviation of the count of that motif in the randomized netowrks, and the $Z$-score comparing the real network to the randomized networks. If \textbf{ranodmizations=False}, the random mean and standard deviations will be reported as 0.000 and the $Z$-score will be given as 888888.000.
+			If \textbf{links=False}, the results include three tables. The first presents the motif profile of the network. Each row gives a motif ID, the count of that motif in the observed network, the mean and standard deviation of the count of that motif in the randomized networks, and the $Z$-score comparing the real network to the randomized networks. If \textbf{randomizations=False}, the random mean and standard deviations will be reported as 0.000 and the $Z$-score will be given as 888888.000.
 
 
 			The second table presents the motif participation for each node in the network. Each row gives a node ID and the number of times the node appears in each motif. Motif ID's are given in the first row.
 
 
-			The third table presents the role for each node in the network. Each row gives a node ID and the number of times the node appears in each position in each motif. Node positions are labelled using the following notation: (motif ID, number of predators/out links, number of prey/in links).
+			The third table presents the role for each node in the network. Each row gives a node ID and the number of times the node appears in each position in each motif. Node positions are labeled using the following notation: (motif ID, number of predators/out links, number of prey/in links).
 
 
-			If \textbf{links=True}, the results will also contain tables presenting links' motif participation and roles. Links' motif participation follows nodes' motif participation and link roles follow node roles. In both cases, the format of the output table echoes that of the node tables. The only notable difference is in the labelling of link positions. Rather than (motif ID, number of out links, number of in links), link positions are labelled (motif ID, (out links for node 1, in links for node 1), (out links for node 2, in links for node 2)) where nodes 1 and 2 are the two species connected by link (1,2).
+			If \textbf{links=True}, the results will also contain tables presenting links' motif participation and roles. Links' motif participation follows nodes' motif participation and link roles follow node roles. In both cases, the format of the output table echoes that of the node tables. The only notable difference is in the labeling of link positions. Rather than (motif ID, number of out links, number of in links), link positions are labeled (motif ID, (out links for node 1, in links for node 1), (out links for node 2, in links for node 2)) where nodes 1 and 2 are the two species connected by link (1,2).
 
+\clearpage
 
 \section{Figures}
 
@@ -198,9 +211,12 @@ $^2$Department of Physics, Chemistry, and Biology (IFM), Link\"{o}ping Universit
 		\includegraphics*[width=\textwidth]{bipartite_motifs.eps}
 	\end{figure}
 
+\clearpage
+
+
 \bibliographystyle{jae}
 \bibliography{biblist}
 
-
+\clearpage
 \end{document}
 
