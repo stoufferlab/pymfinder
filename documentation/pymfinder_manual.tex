@@ -1,0 +1,222 @@
+\documentclass[12pt]{article} 
+\usepackage{amsmath} 
+\usepackage[dvips]{graphicx}
+\usepackage{multirow} 
+\usepackage{geometry} 
+\usepackage{pdflscape}
+\usepackage[labelfont=bf]{caption} 
+\usepackage{setspace}
+\usepackage[running]{lineno} 
+\usepackage[round]{natbib} 
+\usepackage{array}
+
+\newcommand{\methods}{\textit{Materials \& Methods}}
+\newcommand{\SI}{\textit{Appendix}~}
+
+\topmargin -1.5cm % 0.0cm 
+\oddsidemargin 0.0cm % 0.2cm 
+\textwidth 6.5in
+\textheight 9.0in % 21cm
+\footskip 1.0cm % 1.0cm
+
+\usepackage{authblk}
+
+\title{\emph{pymfinder}: Tool Guide}
+
+\author{Bernat Bramon Mora$^{1}$, Alyssa R. Cirtwill$^{2}$, Daniel B. Stouffer $^{1}$} 
+\date{\small
+$^1$Centre for Integrative Ecology, School of Biological Sciences, University of Canterbury, Christchurch, New Zealand\\
+\medskip
+$^2$Department of Physics, Chemistry, and Biology (IFM), Link\"{o}ping University, Link\"{o}ping, Sweden\\ }
+
+\renewcommand\Authands{ and }
+
+\begin{document} 
+\maketitle 
+\raggedright
+\setlength{\parindent}{15pt} 
+
+\newpage
+
+
+
+\section{General information}
+
+	\textbf{Description:} \textit{pymfinder} is a Python package designed to detect motifs in complex networks and define the roles of nodes and links using these motifs. Unipartite networks can be analyzed using three-species motifs and bipartite networks can be analyzed using motifs containing up to six species. Both weighted and binary networks can be analyzed. At its core, \emph{pymfinder} is a combination of Python methods for network-motif analysis as well as a Python wrapper for the original \emph{mfinder} version 1.2 written in C and available at \emph{http://www.weizmann.ac.il/mcb/UriAlon/}~\citep{Alonwebsite}. This code has been included and modified here with the explicit consent of Nadav Kashtan, the author of mfinder 1.2.
+
+	\textbf{Copyrights:} TBD
+
+	\textbf{Version info:} TBD
+
+	\textbf{Availability:} TBD
+
+	\textbf{Platforms:} Windows, Linux, Mac OSX. Following recommendations for mfinder, large and dense networks (\textgreater10 000 nodes) require a computer with at least 512 Mbyte RAM in order to calculate motif frequencies. Calculating node or link roles will require greater resources.
+
+
+\section{How to use \emph{pymfinder}}
+
+	\subsection{Download and installation}
+
+		\subsubsection{Download}
+
+			The \emph{pymfinder} package can be downloaded from Github (url here) or PLOS Computational Biology.
+
+		\subsubsection{Installation}
+
+			Installation within a command-line terminal should be straightforward using the function `setup.py' included in the \emph{pymfinder} package. After navigating to the directory containing the package, run:
+
+			\textbf{python setup.py install}
+
+			If an error message of `Permission denied' or similar is returned, run:
+
+			\textbf{python setup.py install --user}
+
+			This will install \emph{pymfinder} locally rather than in the global Python site-packages or dist-packages directory. 
+
+			% If the mac is being stupid, can install with python setup.py install --user --prefix=""
+
+		\subsubsection{Checking installation}
+
+			After installation, running the included test suite is strongly encouraged. This may be accomplished by running:
+
+			\textbf{python setup.py test}
+
+
+	\subsection{Basic usage}
+
+
+		\subsection{Input file format}
+
+			Input network file format should be in simple `.txt' format. Species names may be given as text or integers but should \textbf{not} include spaces. Each edge should be represented by a line of the following format:
+
+			\textbf{\textless source node\textgreater  \textless target node\textgreater}
+
+			Examples:\\
+			1 2\\
+			3 1\\
+			Salmo\_trutta midge\\
+			Corvus\_corax Salmo\_trutta\\
+
+
+			If interaction strengths are known, they can be passed to \emph{pymfinder} in the input file. In this case, each edge should be represented by a line with the format:
+
+			\textbf{\textless source node\textgreater \textless target node\textgreater \textless interaction strength\textgreater}
+
+			Examples:\\
+			1 2 1\\
+			3 1 2.5\\
+			Salmo\_trutta midge 0.005\\
+			Corvus\_corax Salmo\_trutta 3\\
+
+		\subsubsection{Function call and arguments}
+
+			All of the functions within \emph{pymfinder} can be called using the same framework. Within a Python environment, first import the \emph{pymfinder} package using, for example:
+
+			\textbf{import pymfinder as py}
+
+			The motif structure, motif participation, and motif roles for the network can then be calculated simultaneously using:
+
+			\textbf{results = py.pymfinder(network,\\
+								links=False,\\
+	              motifsize = 3,\\
+	              stoufferIDs = None,\\
+	              allmotifs = False,\\
+	              nrandomizations = 0,\\
+	              randomize = False,\\
+	              usemetropolis = False,\\
+	              networktype = ``unipartite")}.\\
+
+
+			The \emph{pymfinder} function call includes the following arguments:
+
+     	\begin{itemize}
+
+     		\item \textbf{network}: Network path. Must be in quotation marks. No default given.
+
+				\item \textbf{links}: Determines whether or not to calculate statistics for links as well as nodes. If \textbf{links=True}, link participation and roles will be calculated. Defaults to \textbf{links=False}.
+
+				\item \textbf{motifsize}: Size of motifs to be calculated. Defined for motifsize=3 for unipartite networks and 3$\leq$motifsize$\leq$6 for bipartite networks. Defaults to \textbf{motifsize=3}. There are 13 possible three-species motifs for unipartite networks (Fig.~\ref{3sp_unipartite}). For bipartite networks, there are only four three-species motifs (Fig.~\ref{bipartite_motifs}) and a larger motif size may be necessary.
+
+				\item \textbf{stoufferIDs}: Determines whether to label motifs following~\citet{Stouffer2007} or based on the representation of the adjacency matrix of the motif as a binary integer, following the original \emph{mfinder}. If \textbf{stoufferIDs=True}, labels will be as in~\citet{Stouffer2007}. Defaults to \textbf{stoufferIDs=False}.
+
+				\item \textbf{allmotifs}: If true, displays results for all possible motifs regardless of whether all have been observed. If false, displays only results for motifs observed in the network. Defaults to \textbf{allmotifs=False}.
+
+				\item \textbf{nrandomizations}: Number of random networks with which to compare the observed network. Defaults to 0 (no randomizations performed).
+
+				\item \textbf{randomize}: Determines whether to conduct the randomization analysis. If false, no randomizations will be conducted regardless of the value given to \textbf{nrandomizations}. Defaults to \textbf{randomize=False}.
+
+				\item \textbf{usemetropolis}: If randomizations are to be performed, determines whether to use the Metropolis algorithm. If Metropolis is not used, \emph{pymfinder} uses an MCMC algorithm to shuffle the original network while preserving in- and out-degrees of nodes. Defaults to \textbf{usemetropolis=False} (MCMC-based randomizations).
+
+				\item \textbf{networktype}: Indicates whether the network is unipartite (all species may interact with all other species) or bipartite (species are divided into two groups and may interact between groups but not within a group). Defaults to \textbf{networktype=``unipartite''}.
+
+			\end{itemize}
+
+
+		\subsubsection{Functions}
+
+			The \emph{pymfinder} function call references three subordinate functions: \emph{motif\_structure}, \emph{motif\_participation}, and \emph{motif\_roles}. Each subordinate function may also be called independently if the full output from \emph{pymfinder} is not required. When \emph{pymfinder} is called, the subordinate functions are run in order (\emph{motif\_structure} then \emph{motif\_participation} then \emph{motif\_roles}). If a subordinate function is called directly, any preceding function will also be called. That is, calling \emph{motif\_structure} returns only the motif structure output but calling \emph{motif\_participation} returns the motif participation and motif structure output. Note that the three functions differ in the way in which they handle interaction weights.
+
+
+			\emph{motif\_structure} calculates the motif profile of the network. Arguments passable to \emph{motif\_structure} are the same as those for \emph{pymfinder}, except that the \textbf{links} argument is not relevant. The same motif profile will be returned whether or not \textbf{links=True}. [[how are weights handled?]]
+
+
+			\emph{motif\_participation} calculates the motif participation for each node (and each link, if \textbf{links=True}). All arguments passable to \emph{motif\_participation} are the same as those passed to \emph{pymfinder}.[[how are weights handled?]]
+
+
+			\emph{motif\_roles} calculates the role of each node (and each link, if \textbf{links=True}). All arguments passable to \emph{motif\_roles} are the same as those passed to \emph{pymfinder}.[[how are weights handled?]]
+
+
+		\subsubsection{Output}
+
+			The object `results' returned by \emph{pymfinder} is a NetworkStats object containing dictionaries of motifs, nodes, and links as well as the network type (unipartite or bipartite) and the size of motifs used. The value for each motif in the .motifs dictionary is an Motif object containing the motif profile for that motif. Similarly, the value for each node or link in the .nodes or .links dictionaries is a NodeLink object containing the motif participation or role of that node or link.
+
+
+			These results can be collected into text-formatted tables and may be seen using:
+
+			\textbf{print results}
+
+			or written to a file using:
+
+			\textbf{f=open(`filename',`w')\\
+					f.write(str(results))\\
+					f.close()}\\
+			\medskip
+
+
+			If \textbf{links=False}, the results include three tables. The first presents the motif profile of the network. Each row gives a motif ID, the count of that motif in the observed network, the mean and standard deviation of the count of that motif in the randomized networks, and the $Z$-score comparing the real network to the randomized networks. If \textbf{randomizations=False}, the random mean and standard deviations will be reported as 0.000 and the $Z$-score will be given as 888888.000.
+
+
+			The second table presents the motif participation for each node in the network. Each row gives a node ID and the number of times the node appears in each motif. Motif ID's are given in the first row.
+
+
+			The third table presents the role for each node in the network. Each row gives a node ID and the number of times the node appears in each position in each motif. Node positions are labeled using the following notation: (motif ID, number of predators/out links, number of prey/in links).
+
+
+			If \textbf{links=True}, the results will also contain tables presenting links' motif participation and roles. Links' motif participation follows nodes' motif participation and link roles follow node roles. In both cases, the format of the output table echoes that of the node tables. The only notable difference is in the labeling of link positions. Rather than (motif ID, number of out links, number of in links), link positions are labeled (motif ID, (out links for node 1, in links for node 1), (out links for node 2, in links for node 2)) where nodes 1 and 2 are the two species connected by link (1,2).
+
+\clearpage
+
+\section{Figures}
+
+	\begin{figure}[h!]
+		\label{3sp_unipartite}
+		\caption{The thirteen three-species motifs in unipartite networks. The 30 unique positions are numbered, but note that positions are not in the same order as in the output provided by motif\_roles. [[Recommend we change one or the other, so that they match]] Note also that some motifs contain three unique positions (e.g., positions 5, 6, and 7) while other motifs contain only one or two unique positions.}
+		\includegraphics*[width=\textwidth]{unipartite_motifs.eps}
+	\end{figure}
+
+
+	\begin{figure}[h!]
+		\label{bipartite_motifs}
+		\caption{The singe two-species motif, two three-species motifs, four four-species motifs, 10 five-species motifs, and 27 six-species motifs that can be found in bipartite networks. Unique positions are numbered, but note that positions are not in the same order as in the output provided by motif\_roles. If the identity of particular motifs and/or positions is important, be sure to note the motif number and position information provided in the output file.}
+		\includegraphics*[width=\textwidth]{bipartite_motifs.eps}
+	\end{figure}
+
+\clearpage
+
+
+\bibliographystyle{jae}
+\bibliography{biblist}
+
+\clearpage
+\end{document}
+
