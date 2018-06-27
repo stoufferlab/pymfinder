@@ -18,10 +18,11 @@ class Motif(object):
         self.random_m = None
         self.random_sd = None
         self.real_z = None
-        self.weight = None
-        self.weight_m = None
-        self.weight_ma = None
-        self.weight_mi = None
+        self.mean_weight = None
+        self.sd_weight = None
+        self.median_weight = None
+        self.thirdq_weight = None
+        self.firstq_weight = None
 
     # def __rep__(self):
     #     return(str(self.id))

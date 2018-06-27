@@ -117,16 +117,17 @@ def default_fweight(x):
     return sum(x)/len(x)
 
 
-def confidence_interval(data, confidence=0.89):
-    av=np.median(data)
-    m=np.mean(data)
+def confidence_interval(data, confidence=0.75):
+    av=np.mean(data)
+    m=np.median(data)
+    sd=np.std(data)
     n=len(data)
     if n==1:
         return data[0], data[0],data[0],data[0]
     n_data=np.sort(data)
     mi=n_data[int(round(n*(1-confidence)))]
     ma=n_data[int(round(n*confidence)-1)]
-    return av, m, mi, ma
+    return av, sd, m, ma, mi
 
 
 ##############################################################
@@ -302,10 +303,11 @@ def motif_stats(mfinderi,motif_stats,stoufferIDs):
             motif_stats.motifs[motif_id].random_m = float(motif.rand_mean)
             motif_stats.motifs[motif_id].random_sd = float(motif.rand_std_dev)
             motif_stats.motifs[motif_id].real_z = float(motif.real_zscore)
-            motif_stats.motifs[motif_id].weight = 0.0
-            motif_stats.motifs[motif_id].weight_m = 0.0
-            motif_stats.motifs[motif_id].weight_ma = 0.0
-            motif_stats.motifs[motif_id].weight_mi = 0.0
+            motif_stats.motifs[motif_id].mean_weight = 0.0
+            motif_stats.motifs[motif_id].sd_weight = 0.0
+            motif_stats.motifs[motif_id].median_weight = 0.0
+            motif_stats.motifs[motif_id].firstq_weight = 0.0
+            motif_stats.motifs[motif_id].thirdq_weight = 0.0
 
             motif_result = motif_result.next
 
@@ -347,7 +349,7 @@ def weighted_motif_stats(mfinderi, motif_stats, stoufferIDs, fweight):
 
     for motif_id in motif_stats.motifs:
         if motif_stats.motifs[motif_id].real>0:
-            motif_stats.motifs[motif_id].weight, motif_stats.motifs[motif_id].weight_m, motif_stats.motifs[motif_id].weight_mi, motif_stats.motifs[motif_id].weight_ma = confidence_interval(CI[motif_id])
+            motif_stats.motifs[motif_id].mean_weight, motif_stats.motifs[motif_id].sd_weight, motif_stats.motifs[motif_id].median_weight, motif_stats.motifs[motif_id].thirdq_weight, motif_stats.motifs[motif_id].firstq_weight = confidence_interval(CI[motif_id])
 
     if stoufferIDs:
         motif_stats.use_stouffer_IDs()
