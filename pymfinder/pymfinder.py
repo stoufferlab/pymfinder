@@ -123,7 +123,7 @@ def confidence_interval(data, confidence=0.75):
     sd=np.std(data)
     n=len(data)
     if n==1:
-        return data[0], data[0],data[0],data[0]
+        return data[0], 0, data[0],data[0],data[0]
     n_data=np.sort(data)
     mi=n_data[int(round(n*(1-confidence)))]
     ma=n_data[int(round(n*confidence)-1)]
@@ -280,8 +280,7 @@ def motif_structure(network,
     # determine all nodes' role statistics
     if stats.weighted:
         if len(stats.motifs) == 0:
-            #TODO why is there a false with stoufferID
-            motif_stats(web,stats,stoufferIDs=False)
+            motif_stats(web,stats,stoufferIDs=stoufferIDs)
         web.MaxMembersListSz = max([stats.motifs[x].real for x in stats.motifs])+1
         return weighted_motif_stats(web, stats, stoufferIDs, fweight)
     else:
@@ -328,18 +327,21 @@ def weighted_motif_stats(mfinderi, motif_stats, stoufferIDs, fweight):
     while (r_l != None):
         motif = cmfinder.get_motif(r_l.p)
         id = int(motif.id)
-        CI[id]=[]
+        idx=0
+        
+        CI[id]=np.zeros(motif_stats.motifs[id].real)
 
         am_l = motif.all_members.l
+
         while (am_l != None):
+            idx+=1
+
             cmfinder.get_motif_members(am_l.p, members, mfinderi.MotifSize)
             py_members = [int(members[i]) for i in xrange(mfinderi.MotifSize)]
 
             weight = fweight([motif_stats.links[x].weight for x in permutations(py_members, 2) if x in motif_stats.links])
 
-            #motif_stats.motifs[id].weight += weight
-            #motif_stats.motifs[id].weight_sd += weight**2
-            CI[id] += [weight]
+            CI[id][idx] = weight
 
             am_l = am_l.next
 
@@ -413,14 +415,13 @@ def motif_participation(network,
     if len(stats.motifs) == 0:
         web.NRandomizations = 0
         web.UseMetropolis = 0
-        #TODO why is there a false with stoufferID
-        motif_stats(web,stats,stoufferIDs=False)
+        motif_stats(web,stats,stoufferIDs=stoufferIDs)
 
     web.MaxMembersListSz = max([stats.motifs[x].real for x in stats.motifs])+1
 
-    #TODO should I run this here? Alternatively, I can do it inside participation
-    #if stats.weighted:
-    #    weighted_motif_stats(web,stats,stoufferIDs=False)
+    #TODO I can also run this inside participation
+    if stats.weighted:
+        weighted_motif_stats(web,stats,stoufferIDs=False)
 
     #check if this function has already been run
     if len(stats.nodes[stats.nodes.keys()[0]].motifs) != 0:
@@ -595,9 +596,9 @@ def motif_roles(network,
 
     web.MaxMembersListSz = max([stats.motifs[x].real for x in stats.motifs])+1
 
-    #TODO should I run this here? Alternatively, I can do it inside participation
-    #if stats.weighted:
-    #    weighted_motif_stats(web,stats,stoufferIDs=False)
+    #TODO I can also run this inside role_stats
+    if stats.weighted:
+        weighted_motif_stats(web,stats,stoufferIDs=False)
 
     #check if this function has already been run
     if len(stats.nodes[stats.nodes.keys()[0]].roles) != 0:

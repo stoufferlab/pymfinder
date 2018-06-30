@@ -133,8 +133,8 @@ class NetworkStats(object):
                                    "%.3f" % self.motifs[m].random_m,
                                    "%.3f" % self.motifs[m].random_sd,
                                    "%.3f" % self.motifs[m].real_z,
-                                   "%.3f" % self.motifs[m].weight,
-                                   "%.3f" % self.motifs[m].weight_m,
+                                   "%.3f" % self.motifs[m].mean_weight,
+                                   "%.3f" % self.motifs[m].sd_weight,
                                   ]) + '\n'
             output = output + '\n'
 
