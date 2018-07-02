@@ -123,8 +123,8 @@ class NetworkStats(object):
                                'rand',
                                'srand',
                                'zscore',
-                               'weight',
-                               'median-weight',]) + '\n'
+                               'weight-mean',
+                               'weight-sd',]) + '\n'
 
             # set up the data itself
             for m in sorted(self.motifs.keys()):

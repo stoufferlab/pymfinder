@@ -21,6 +21,8 @@
 \usepackage[numbers,round]{natbib}
 \bibliographystyle{plainnat}
 \PassOptionsToPackage{hyphens}{url}\usepackage[colorlinks=true,linkcolor=magenta, citecolor=magenta]{hyperref}
+\usepackage{url}
+
 \newcommand\tab[1][1cm]{\hspace*{#1}}
 
 
@@ -85,15 +87,15 @@ $^2$Department of Physics, Chemistry, and Biology (IFM), Link\"{o}ping Universit
 
 \section{General information}
 	\textbf{Description:} \textit{pymfinder} is a Python package designed to detect motifs in complex networks and define the roles of nodes and links using these motifs. Both weighted and binary networks can be analyzed. At its core, \emph{pymfinder} is a combination of Python methods for network-motif analysis as well as a Python wrapper for the original \emph{mfinder} version 1.2 written in C and available at \url{http://www.weizmann.ac.il/mcb/UriAlon/}. This code has been included and modified here with the explicit consent of Nadav Kashtan, the author of mfinder 1.2.\\
-	\textbf{Copyrights:} TBD\\
-	\textbf{Version info:} TBD\\
-	\textbf{Availability:} TBD\\
-	\textbf{Platforms:} Windows, Linux, Mac OSX. Following recommendations for mfinder, large and dense networks (\textgreater10 000 nodes) require a computer with at least 512 Mbyte RAM in order to calculate motif frequencies. Calculating node or link roles will require greater resources. The analysis of motifs bigger then 8 nodes is not recommended.
+	\textbf{License:} MIT License (2018)\\
+	\textbf{Version info:} pymfinder0.23\\
+	\textbf{Availability:} \url{https://github.com/stoufferlab/pymfinder}\\
+	\textbf{Platforms:} Windows, Linux, Mac OSX. \textit{pymfinder} will require you to have the Python modules Numpy and Setuptools installed in your machine. Following recommendations for mfinder, large and dense networks (\textgreater10 000 nodes) require a computer with at least 512 Mbyte RAM in order to calculate motif frequencies. Calculating node or link roles will require greater resources. The analysis of motifs bigger then 8 nodes is not recommended.
 
 \section{How to use \emph{pymfinder}}
 	\subsection{Download and installation}
 		\subsubsection{Download}
-			The \emph{pymfinder} package can be downloaded from Github (url here) or PLOS Computational Biology.
+			\emph{pymfinder} can be downloaded from \url{https://github.com/stoufferlab/pymfinder}. Please make sure you cite \textit{software article} if you decide to use \emph{pymfinder}.
 		\subsubsection{Installation}
 			Installation within a command-line terminal should be straightforward using the function `setup.py' included in the \emph{pymfinder} package. After navigating to the directory containing the package, run:
 
@@ -160,7 +162,7 @@ $^2$Department of Physics, Chemistry, and Biology (IFM), Link\"{o}ping Universit
      	\begin{itemize}
      		\item \textbf{network}: Network path. Must be in quotation marks. No default given.
 				\item \textbf{links}: Determines whether or not to calculate statistics for links as well as nodes. If \textbf{links=True}, link participation and roles will be calculated. Defaults to \textbf{links=False}.
-				\item \textbf{motifsize}: Size of motifs to be calculated. Defined for motifsize=3 for unipartite networks and 3$\leq$motifsize$\leq$6 for bipartite networks. Defaults to \textbf{motifsize=3}. There are 13 possible three-species motifs for unipartite networks (Fig.~\ref{fig:3sp_unipartite}). For bipartite networks, there are only four three-species motifs (Fig.~\ref{bipartite_motifs}) and a larger motif size may be necessary.
+				\item \textbf{motifsize}: Size of motifs to be calculated. Defaults to \textbf{motifsize=3}. There are 13 possible three-species motifs for unipartite networks (Fig.~\ref{fig:3sp_unipartite}). For bipartite networks, there are only four three-species motifs (Fig.~\ref{bipartite_motifs}) and a larger motif size may be necessary. If one needs to analyze the motif structure or the motif participation of motifs $>3$ nodes in unipartite networks or $>6$ nodes in bipartite networks, `motif\_structure' and `motif\_participation' need to be run independently.
 				\item \textbf{stoufferIDs}: Determines whether to label motifs following~\citet{Stouffer2007} or based on the representation of the adjacency matrix of the motif as a binary integer, following the original \emph{mfinder}. If \textbf{stoufferIDs=True}, labels will be as in~\citet{Stouffer2007}. Defaults to \textbf{stoufferIDs=False}.
 				\item \textbf{allmotifs}: If true, displays results for all possible motifs regardless of whether all have been observed. If false, displays only results for motifs observed in the network. Defaults to \textbf{allmotifs=False}.
 				\item \textbf{nrandomizations}: Number of random networks with which to compare the observed network. Defaults to 0 (no randomizations performed).
@@ -177,7 +179,7 @@ $^2$Department of Physics, Chemistry, and Biology (IFM), Link\"{o}ping Universit
 
 			\emph{motif\_participation} calculates the motif participation for each node (and each link, if \textbf{links=True}). All arguments passable to \emph{motif\_participation} are the same as those passed to \emph{pymfinder}. If \textbf{weighted=True}, the weight of all interactions forming each motif will also be considered (see the description in the article presenting the software). The characterization of the weight of a motif can be changed using the functional argument \textbf{fweight}. Such function \textbf{fweight} needs to take a Python list as input and return a value. The default \textbf{fweight} is the arithmetic mean.
 
-			\emph{motif\_roles} calculates the role of each node (and each link, if \textbf{links=True}). All arguments passable to \emph{motif\_roles} are the same as those passed to \emph{pymfinder}. If \textbf{weighted=True}, the weight of all interactions forming each motif will also be considered (see the description in the article presenting the software). The characterization of the weight of a motif can be changed using the functional argument \textbf{fweight}. Such function \textbf{fweight} needs to take a Python list as input and return a value. The default \textbf{fweight} is the arithmetic mean.
+			\emph{motif\_roles} calculates the role of each node (and each link, if \textbf{links=True}). All arguments passable to \emph{motif\_roles} are the same as those passed to \emph{pymfinder}. Only defined for 2$\leq$motifsize$\leq$3 for unipartite networks and 2$\leq$motifsize$\leq$6 for bipartite networks. If \textbf{weighted=True}, the weight of all interactions forming each motif will also be considered (see the description in the article presenting the software). The characterization of the weight of a motif can be changed using the functional argument \textbf{fweight}. Such function \textbf{fweight} needs to take a Python list as input and return a value. The default \textbf{fweight} is the arithmetic mean.
 
 		\subsubsection{Output}
 			The object `results' returned by \emph{pymfinder} is a NetworkStats object containing dictionaries of motifs, nodes, and links as well as the network type (unipartite or bipartite) and the size of motifs used. The value for each motif in the .motifs dictionary is an Motif object containing the motif profile for that motif. Similarly, the value for each node or link in the .nodes or .links dictionaries is a NodeLink object containing the motif participation or role of that node or link.

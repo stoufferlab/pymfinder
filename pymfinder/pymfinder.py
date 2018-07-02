@@ -20,7 +20,7 @@ def read_links(filename):
         l = i.strip().split()
         if len(l) > 3 or len(l) < 2:
             inFile.close()
-            sys.stderr.write("There is something peculiar about one of the interactions in your input file.\n")
+            sys.stderr.write("Error: there is something peculiar about one of the interactions in your input file.\n")
             sys.exit()
         elif len(l) == 2:
             links += [tuple(l + [1])]
@@ -109,7 +109,7 @@ def mfinder_network_setup(network):
         edges, numedges = gen_mfinder_network(links)
         return links, network, edges, numedges
     else:
-        sys.stderr.write("Uncle Sam frowns upon tax cheats.\n")
+        sys.stderr.write("Error: this is an invalid nework input.\n")
         sys.exit()
 
 
@@ -123,7 +123,7 @@ def confidence_interval(data, confidence=0.75):
     sd=np.std(data)
     n=len(data)
     if n==1:
-        return data[0], 0, data[0],data[0],data[0]
+        return data[0], 0.0, data[0],data[0],data[0]
     n_data=np.sort(data)
     mi=n_data[int(round(n*(1-confidence)))]
     ma=n_data[int(round(n*confidence)-1)]
@@ -229,14 +229,26 @@ def motif_structure(network,
                     motifsize = 3,
                     nrandomizations = 0,
                     usemetropolis = False,
-                    stoufferIDs = None,
+                    allmotifs = False,
+                    stoufferIDs = False,
                     weighted = False,
                     fweight = None
                     ):
 
-    #if weighted and nrandomizations > 0:
-    #    sys.stderr.write("Sorry, randomizations for weighted networks aren't implemented yet.\n")
-    #    sys.exit()
+    if motifsize < 2:
+        sys.stderr.write("Error: this is not a valid motif size.\n")
+        sys.exit()
+
+    if motifsize > 8:
+        sys.stderr.write("Warning: this is not a recommended motif size.\n")
+        sys.exit()
+
+    if weighted and nrandomizations > 0:
+        sys.stderr.write("Warning: the analysis of weighted motifs won't be performed for the randomized networks, only for the real one. There are different ways to randomize weighted networks, you could define your own and run motif_structure multiple times to find the random distribution of weighted motifs.\n")
+
+    if stoufferIDs and motifsize>3:
+        sys.stderr.write("Warning: 'stoufferIDs' can only be true when 'motifsize=3' in unipartite networks.\n")
+        stoufferIDs = False
 
     # initialize the heinous input struct
     web = cmfinder.mfinder_input()
@@ -247,18 +259,17 @@ def motif_structure(network,
     # add or check some basics of stats object
     if stats.motifsize:
         if stats.motifsize != motifsize:
-            sys.stderr.write("You're trying to mix motif sizes.\n")
+            sys.stderr.write("Error: you're trying to mix motif sizes.\n")
             sys.exit()
     else:
         stats.motifsize = motifsize
 
-    # TODO: Double check this!
     if stats.networktype:
         stats.networktype = "unipartite"
 
     if stats.weighted!=None:
         if stats.weighted != weighted:
-            sys.stderr.write("You're trying to mix two different motif analyses.\n")
+            sys.stderr.write("Error: you're trying to mix two different motif analyses.\n")
 
     stats.weighted = weighted
 
@@ -280,14 +291,14 @@ def motif_structure(network,
     # determine all nodes' role statistics
     if stats.weighted:
         if len(stats.motifs) == 0:
-            motif_stats(web,stats,stoufferIDs=stoufferIDs)
+            motif_stats(web,stats,stoufferIDs, allmotifs)
         web.MaxMembersListSz = max([stats.motifs[x].real for x in stats.motifs])+1
-        return weighted_motif_stats(web, stats, stoufferIDs, fweight)
+        return weighted_motif_stats(web, stats, stoufferIDs, fweight, allmotifs)
     else:
-        return motif_stats(web, stats, stoufferIDs)
+        return motif_stats(web, stats, stoufferIDs, allmotifs)
 
         
-def motif_stats(mfinderi,motif_stats,stoufferIDs):
+def motif_stats(mfinderi,motif_stats,stoufferIDs, allmotifs):
     results = cmfinder.motif_structure(mfinderi)
 
     if results:
@@ -297,16 +308,17 @@ def motif_stats(mfinderi,motif_stats,stoufferIDs):
 
             motif_id = int(motif.id)
             
-            motif_stats.add_motif(motif_id)
-            motif_stats.motifs[motif_id].real = int(motif.real_count)
-            motif_stats.motifs[motif_id].random_m = float(motif.rand_mean)
-            motif_stats.motifs[motif_id].random_sd = float(motif.rand_std_dev)
-            motif_stats.motifs[motif_id].real_z = float(motif.real_zscore)
-            motif_stats.motifs[motif_id].mean_weight = 0.0
-            motif_stats.motifs[motif_id].sd_weight = 0.0
-            motif_stats.motifs[motif_id].median_weight = 0.0
-            motif_stats.motifs[motif_id].firstq_weight = 0.0
-            motif_stats.motifs[motif_id].thirdq_weight = 0.0
+            if allmotifs or int(motif.real_count)+float(motif.rand_mean)!=0:
+                motif_stats.add_motif(motif_id)
+                motif_stats.motifs[motif_id].real = int(motif.real_count)
+                motif_stats.motifs[motif_id].random_m = float(motif.rand_mean)
+                motif_stats.motifs[motif_id].random_sd = float(motif.rand_std_dev)
+                motif_stats.motifs[motif_id].real_z = float(motif.real_zscore)
+                motif_stats.motifs[motif_id].mean_weight = 0.0
+                motif_stats.motifs[motif_id].sd_weight = 0.0
+                motif_stats.motifs[motif_id].median_weight = 0.0
+                motif_stats.motifs[motif_id].firstq_weight = 0.0
+                motif_stats.motifs[motif_id].thirdq_weight = 0.0
 
             motif_result = motif_result.next
 
@@ -317,7 +329,7 @@ def motif_stats(mfinderi,motif_stats,stoufferIDs):
 
     return motif_stats
 
-def weighted_motif_stats(mfinderi, motif_stats, stoufferIDs, fweight):
+def weighted_motif_stats(mfinderi, motif_stats, stoufferIDs, fweight, allmotifs):
 
     results = cmfinder.motif_participation(mfinderi)
     CI={}
@@ -334,7 +346,6 @@ def weighted_motif_stats(mfinderi, motif_stats, stoufferIDs, fweight):
         am_l = motif.all_members.l
 
         while (am_l != None):
-            idx+=1
 
             cmfinder.get_motif_members(am_l.p, members, mfinderi.MotifSize)
             py_members = [int(members[i]) for i in xrange(mfinderi.MotifSize)]
@@ -342,6 +353,7 @@ def weighted_motif_stats(mfinderi, motif_stats, stoufferIDs, fweight):
             weight = fweight([motif_stats.links[x].weight for x in permutations(py_members, 2) if x in motif_stats.links])
 
             CI[id][idx] = weight
+            idx+=1
 
             am_l = am_l.next
 
@@ -376,6 +388,17 @@ def motif_participation(network,
                         fweight = None
                         ):
 
+    if motifsize < 2:
+        sys.stderr.write("Error: this is not a valid motif size.\n")
+        sys.exit()
+
+    if motifsize > 8:
+        sys.stderr.write("Warning: this is not a recommended motif size.\n")
+        sys.exit()
+
+    if stoufferIDs and motifsize>3:
+        sys.stderr.write("Warning: 'stoufferIDs' can only be true when 'motifsize=3' in unipartite networks.\n")
+        stoufferIDs = False
 
     # do we want to randomize the network first?
     if randomize:
@@ -391,7 +414,7 @@ def motif_participation(network,
     # add or check some basics of stats object
     if stats.motifsize:
         if stats.motifsize != motifsize:
-            sys.stderr.write("You're trying to mix motif sizes.\n")
+            sys.stderr.write("Error: you're trying to mix motif sizes.\n")
             sys.exit()
     else:
         stats.motifsize = motifsize
@@ -401,7 +424,7 @@ def motif_participation(network,
 
     if stats.weighted!=None:
         if stats.weighted != weighted:
-            sys.stderr.write("You're trying to mix two different motif analyses (weighted and not weighted). Be careful!\n")
+            sys.stderr.write("Warning: you're trying to mix two different motif analyses (weighted and not weighted). Be careful!\n")
 
     stats.weighted = weighted
 
@@ -415,13 +438,13 @@ def motif_participation(network,
     if len(stats.motifs) == 0:
         web.NRandomizations = 0
         web.UseMetropolis = 0
-        motif_stats(web,stats,stoufferIDs=stoufferIDs)
+        motif_stats(web,stats,stoufferIDs, allmotifs)
 
     web.MaxMembersListSz = max([stats.motifs[x].real for x in stats.motifs])+1
 
     #TODO I can also run this inside participation
     if stats.weighted:
-        weighted_motif_stats(web,stats,stoufferIDs=False)
+        weighted_motif_stats(web,stats,stoufferIDs,fweight,allmotifs)
 
     #check if this function has already been run
     if len(stats.nodes[stats.nodes.keys()[0]].motifs) != 0:
@@ -438,15 +461,11 @@ def participation_stats(mfinderi, participation, links, stoufferIDs, allmotifs, 
 
     results = cmfinder.motif_participation(mfinderi)
 
-    possible_motifs = set(STOUFFER_MOTIF_IDS.keys())
-    actual_motifs = set([])
-
     r_l = results.l
     members = cmfinder.intArray(mfinderi.MotifSize)
     while (r_l != None):
         motif = cmfinder.get_motif(r_l.p)
         id = int(motif.id)
-        actual_motifs.add(id)
 
         am_l = motif.all_members.l
         while (am_l != None):
@@ -493,9 +512,7 @@ def participation_stats(mfinderi, participation, links, stoufferIDs, allmotifs, 
 
     cmfinder.res_tbl_mem_free_single(results)
 
-
-    if not allmotifs:
-        possible_motifs = actual_motifs
+    possible_motifs = set(participation.motifs.keys())
 
 
     for r in possible_motifs:
@@ -549,6 +566,17 @@ def motif_roles(network,
                 fweight = None
                 ):
 
+    if motifsize < 2:
+        sys.stderr.write("Error: this is not a valid motif size.\n")
+        sys.exit()
+
+    if stoufferIDs and motifsize>3:
+        sys.stderr.write("Warning: 'stoufferIDs' can only be true when 'motifsize=3' in unipartite networks.\n")
+        stoufferIDs = False
+
+    if (networktype=="unipartite" and motifsize>3) or (networktype=="bipartite" and motifsize>6):
+        sys.stderr.write("Error: the analysis of the motif-role profiles can only be done for motif size 2 and 3 in unipartite networks and up to motif size 6 in bipartite networks.\n")
+        sys.exit()
 
     # do we want to randomize the network first?
     if randomize:
@@ -592,13 +620,13 @@ def motif_roles(network,
     if len(stats.motifs) == 0:
         web.NRandomizations = 0
         web.UseMetropolis = 0
-        motif_stats(web,stats,stoufferIDs=False)
+        motif_stats(web,stats,stoufferIDs, allroles)
 
     web.MaxMembersListSz = max([stats.motifs[x].real for x in stats.motifs])+1
 
     #TODO I can also run this inside role_stats
     if stats.weighted:
-        weighted_motif_stats(web,stats,stoufferIDs=False)
+        weighted_motif_stats(web,stats,stoufferIDs,fweight,allroles)
 
     #check if this function has already been run
     if len(stats.nodes[stats.nodes.keys()[0]].roles) != 0:
@@ -785,7 +813,7 @@ def role_stats(mfinderi,roles,links,networktype,stoufferIDs,allroles,fweight):
 def pymfinder(network,
               links=False,
               motifsize = 3,
-              stoufferIDs = None,
+              stoufferIDs = False,
               allmotifs = False,
               nrandomizations = 0,
               randomize = False,
