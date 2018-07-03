@@ -2,7 +2,7 @@
 
 **pymfinder** is Python package with which to find network motifs in complex networks and to analyze a growing list of network-motif related *stuff*.
 
-At its core, pymfinder is a combination of Python methods for network-motif analysis as well as a Python wrapper for the _original_ mfinder version 1.2 written in C and available on [Uri Alon's website](http://www.weizmann.ac.il/mcb/UriAlon/). This code has been included and modified here with the explicit consent of [Nadav Kashtan](mailto:nadav.kashtan@gmail.com), the author of mfinder 1.2.
+At its core, pymfinder is a combination of Python methods for network-motif analysis as well as a Python wrapper for the _original_ mfinder version 1.2 written in C and available on [Uri Alon's website](http://www.weizmann.ac.il/mcb/UriAlon/). This code has been included and modified here with the explicit consent of [Nadav Kashtan](mailto:nadav.kashtan@gmail.com), the author of mfinder 1.2. pymfinder will require you to have the Python modules Numpy and Setuptools installed in your machine.
 
 
 ## Installation instructions
