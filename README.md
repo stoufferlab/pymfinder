@@ -18,6 +18,8 @@ If you receive an error about 'Permission denied' or something similar, you most
 
 If you still cannot install pymfinder, please check [the issues page](https://github.com/stoufferlab/pymfinder/issues/) and, if your problem isn't listed, create a new one.
 
+If you prefer to use Python 3, you can also switch to the branch pymfinder-python3.
+
 #### Checking the installation
 
 Assuming that the package installs properly, it is strongly recommended that you run the test suite to make sure that nothing fishy is going on. Doing so is as simple as running
