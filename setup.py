@@ -63,7 +63,7 @@ mfinder = Extension('_mfinder',
 #############################################################################
 setup(
     name = "pymfinder",
-    version = "0.23",
+    version = "1.0",
     description = "Python wrapper for mfinder 1.2",
     author = "Daniel B. Stouffer",
     author_email = "daniel.stouffer@canterbury.ac.nz",
