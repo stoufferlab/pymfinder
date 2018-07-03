@@ -19,7 +19,7 @@ class pymfinderTestCase(unittest.TestCase):
         self.test_filename_b = [os.path.dirname(__file__) + "/../pymfinder/data/bipartite-"+str(x)+"-test.net" for x in range(2,7)]
 
         for x in range(0,2):
-            print self.test_filename_u[x]
+            print(self.test_filename_u[x])
             try:
                 with open(self.test_filename_u[x]) as file:
                     pass
@@ -28,7 +28,7 @@ class pymfinderTestCase(unittest.TestCase):
                 sys.exit(1)
 
         for x in range(0,5):
-            print self.test_filename_b[x]
+            print(self.test_filename_b[x])
             try:
                 with open(self.test_filename_b[x]) as file:
                     pass
@@ -45,13 +45,13 @@ class pymfinderTestCase(unittest.TestCase):
     def test_unipartite_motif_weighted_structure(self):
         for i in range(0,2):
             result = motif_structure(self.test_filename_u[i], motifsize=i+2, nrandomizations=0, weighted=True)
-            motifs=[int(result.motifs[n].mean_weight)==n for n in result.motifs.keys()]
+            motifs=[int(result.motifs[n].mean_weight)==n for n in list(result.motifs.keys())]
             self.assertTrue(all(motifs))
 
     def test_unipartite_motif_participation(self):
         for i in range(0,2):
             result = motif_participation(self.test_filename_u[i], motifsize=i+2,)
-            all_roles = result.nodes[result.nodes.keys()[0]].motifs.keys()
+            all_roles = list(result.nodes[list(result.nodes.keys())[0]].motifs.keys())
             roles=[[result.nodes[n].motifs[r] for r in all_roles] for n in result.nodes]
             check_columns=[sum(x) for x in zip(*roles)]==[i+2]*len(all_roles) # Check the number of nodes in each motif
             check_rows=[sum(x) for x in roles]==[1]*len(result.nodes) # Check that each node is in only one motif
@@ -60,7 +60,7 @@ class pymfinderTestCase(unittest.TestCase):
     def test_unipartite_motif_weighted_participation(self):
         for i in range(0,2):
             result = motif_participation(self.test_filename_u[i], motifsize=i+2, weighted=True)
-            all_roles = result.nodes[result.nodes.keys()[0]].weighted_motifs.keys()
+            all_roles = list(result.nodes[list(result.nodes.keys())[0]].weighted_motifs.keys())
             roles=[[int(result.nodes[n].weighted_motifs[r]) for r in all_roles] for n in result.nodes]
             check_columns=[sum(x)/(i+2) for x in zip(*roles)]==all_roles # Check the number of nodes in each motif
             check_rows=[sum(x) for x in roles]==[int(result.nodes[x].id[:-1]) for x in result.nodes] # Check that each node is in only one motif
@@ -69,9 +69,9 @@ class pymfinderTestCase(unittest.TestCase):
     def test_unipartite_link_participation(self):
         for i in range(0,2):
             result = motif_participation(self.test_filename_u[i], motifsize=i+2,links=True)
-            all_roles = result.links[result.links.keys()[0]].motifs.keys() # List of motifs
+            all_roles = list(result.links[list(result.links.keys())[0]].motifs.keys()) # List of motifs
             roles=[[result.links[n].motifs[r] for r in sorted(all_roles)] for n in result.links] # r are motifs, n are link tuples
-            motiflist=sorted(result.motifs.keys()) # Need to keep these in the same order
+            motiflist=sorted(list(result.motifs.keys())) # Need to keep these in the same order
             check_columns=[sum(x) for x in zip(*roles)]==[links_per_motif[i+2][motif] for motif in motiflist] # Each motif contains the number of links I think it should
             check_rows=[sum(x) for x in roles]==[1]*len(result.links) # Each link is in only one motif
             self.assertTrue(check_columns and check_rows)
@@ -79,7 +79,7 @@ class pymfinderTestCase(unittest.TestCase):
     def test_unipartite_motif_roles(self):
         for i in range(0,2):
             result = motif_roles(self.test_filename_u[i], motifsize=i+2,)
-            all_roles = result.nodes[result.nodes.keys()[0]].roles.keys()
+            all_roles = list(result.nodes[list(result.nodes.keys())[0]].roles.keys())
             roles=[[result.nodes[n].roles[r] for r in all_roles] for n in result.nodes]
             columns=[sum(x) for x in zip(*roles)]
             check_total_nodes=sum(columns)==3*13 or 2*2
@@ -90,7 +90,7 @@ class pymfinderTestCase(unittest.TestCase):
     def test_unipartite_link_roles(self):
         for i in range(0,2):
             result = motif_roles(self.test_filename_u[i], motifsize=i+2,links=True)
-            all_roles = result.links[result.links.keys()[0]].roles.keys()
+            all_roles = list(result.links[list(result.links.keys())[0]].roles.keys())
             roles=[[result.links[n].roles[r] for r in all_roles] for n in result.links]
             columns=[sum(x) for x in zip(*roles)]
             #Are there the number of links we think there are?
@@ -102,7 +102,7 @@ class pymfinderTestCase(unittest.TestCase):
     def test_bipartite_motif_roles(self):
         for i in range(0,5):
             result = motif_roles(self.test_filename_b[i], motifsize=i+2, networktype = "bipartite",)
-            all_roles = result.nodes[result.nodes.keys()[0]].roles.keys()
+            all_roles = list(result.nodes[list(result.nodes.keys())[0]].roles.keys())
             roles=[[result.nodes[n].roles[r] for r in all_roles] for n in result.nodes]
             check_columns=any(v==0 for v in [ sum(x) for x in zip(*roles)])==False
             check_rows=[sum(x) for x in roles]==[1]*len(result.nodes)

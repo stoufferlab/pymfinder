@@ -1,10 +1,10 @@
 
-import mfinder.mfinder as cmfinder
+import pymfinder.mfinder.mfinder as cmfinder
 import sys
 from itertools import combinations, permutations
 from math import sqrt
-from roles import *
-from datatypes import *
+from pymfinder.roles import *
+from pymfinder.datatypes import *
 import numpy as np
 
 ##############################################################
@@ -184,6 +184,10 @@ def print_motifs(motifs,motifsize,outFile=None,sep=" ",links=False):
 # RANDOM NETWORK CODE
 ##############################################################
 ##############################################################
+
+def xrange(x):
+
+    return iter(range(x))
 
 def random_network(network,
                    usemetropolis = False,
@@ -447,11 +451,11 @@ def motif_participation(network,
         weighted_motif_stats(web,stats,stoufferIDs,fweight,allmotifs)
 
     #check if this function has already been run
-    if len(stats.nodes[stats.nodes.keys()[0]].motifs) != 0:
-        for x in stats.nodes.keys():
+    if len(stats.nodes[list(stats.nodes.keys())[0]].motifs) != 0:
+        for x in list(stats.nodes.keys()):
             stats.nodes[x].motifs = dict()
-        if len(stats.links[stats.links.keys()[0]].motifs) != 0:
-            for x in stats.links.keys():
+        if len(stats.links[list(stats.links.keys())[0]].motifs) != 0:
+            for x in list(stats.links.keys()):
                 stats.links[x].motifs = dict()
 
     return participation_stats(web,stats,links,stoufferIDs,allmotifs,fweight)
@@ -629,11 +633,11 @@ def motif_roles(network,
         weighted_motif_stats(web,stats,stoufferIDs,fweight,allroles)
 
     #check if this function has already been run
-    if len(stats.nodes[stats.nodes.keys()[0]].roles) != 0:
-        for x in stats.nodes.keys():
+    if len(stats.nodes[list(stats.nodes.keys())[0]].roles) != 0:
+        for x in list(stats.nodes.keys()):
             stats.nodes[x].roles = dict()
-        if len(stats.links[stats.links.keys()[0]].roles) != 0:
-            for x in stats.links.keys():
+        if len(stats.links[list(stats.links.keys())[0]].roles) != 0:
+            for x in list(stats.links.keys()):
                 stats.links[x].roles = dict()
 
     # determine all nodes' role statistics
