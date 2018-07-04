@@ -106,6 +106,8 @@ $^2$Department of Physics, Chemistry, and Biology (IFM), Link\"{o}ping Universit
 			\tab\texttt{python setup.py install --user}
 
 			This will install \emph{pymfinder} locally rather than in the global Python site-packages or dist-packages directory. 
+			
+			If you are using Python 3, you should switch to the branch pymfinder-python3 of the Github repository.
 
 			% If the mac is being stupid, can install with python setup.py install --user --prefix=""
 		\subsubsection{Checking installation}
@@ -160,13 +162,13 @@ $^2$Department of Physics, Chemistry, and Biology (IFM), Link\"{o}ping Universit
 
 			The \emph{pymfinder} function call includes the following arguments:
      	\begin{itemize}
-     		\item \textbf{network}: Network path. Must be in quotation marks. No default given.
+     		\item \textbf{network}: This can be a path to a network file, a list of interactions or a NetworkStats object. No default given (see the description in the article presenting the software).
 				\item \textbf{links}: Determines whether or not to calculate statistics for links as well as nodes. If \textbf{links=True}, link participation and roles will be calculated. Defaults to \textbf{links=False}.
 				\item \textbf{motifsize}: Size of motifs to be calculated. Defaults to \textbf{motifsize=3}. There are 13 possible three-species motifs for unipartite networks (Fig.~\ref{fig:3sp_unipartite}). For bipartite networks, there are only four three-species motifs (Fig.~\ref{bipartite_motifs}) and a larger motif size may be necessary. If one needs to analyze the motif structure or the motif participation of motifs $>3$ nodes in unipartite networks or $>6$ nodes in bipartite networks, `motif\_structure' and `motif\_participation' need to be run independently.
 				\item \textbf{stoufferIDs}: Determines whether to label motifs following~\citet{Stouffer2007} or based on the representation of the adjacency matrix of the motif as a binary integer, following the original \emph{mfinder}. If \textbf{stoufferIDs=True}, labels will be as in~\citet{Stouffer2007}. Defaults to \textbf{stoufferIDs=False}.
 				\item \textbf{allmotifs}: If true, displays results for all possible motifs regardless of whether all have been observed. If false, displays only results for motifs observed in the network. Defaults to \textbf{allmotifs=False}.
 				\item \textbf{nrandomizations}: Number of random networks with which to compare the observed network. Defaults to 0 (no randomizations performed).
-				\item \textbf{randomize}: Determines whether to conduct the randomization analysis. If false, no randomizations will be conducted regardless of the value given to \textbf{nrandomizations}. Defaults to \textbf{randomize=False}.
+				\item \textbf{randomize}: Determines whether or not to randomize the network before analyzing the participation and roles of the nodes and links in the network. If false, no randomization will be applied to the network. Defaults to \textbf{randomize=False}.
 				\item \textbf{usemetropolis}: If randomizations are to be performed, determines whether to use the Metropolis algorithm. If Metropolis is not used, \emph{pymfinder} uses an MCMC algorithm to shuffle the original network while preserving in- and out-degrees of nodes. Defaults to \textbf{usemetropolis=False} (MCMC-based randomizations).
 				\item \textbf{networktype}: Indicates whether the network is unipartite (all species may interact with all other species) or bipartite (species are divided into two groups and may interact between groups but not within a group). Defaults to \textbf{networktype=``unipartite''}.
 				\item \textbf{weighted}: If true, the motif analysis will account for the weight of the interactions. Defaults to \textbf{weighted=False}.
@@ -182,7 +184,7 @@ $^2$Department of Physics, Chemistry, and Biology (IFM), Link\"{o}ping Universit
 			\emph{motif\_roles} calculates the role of each node (and each link, if \textbf{links=True}). All arguments passable to \emph{motif\_roles} are the same as those passed to \emph{pymfinder}. Only defined for 2$\leq$motifsize$\leq$3 for unipartite networks and 2$\leq$motifsize$\leq$6 for bipartite networks. If \textbf{weighted=True}, the weight of all interactions forming each motif will also be considered (see the description in the article presenting the software). The characterization of the weight of a motif can be changed using the functional argument \textbf{fweight}. Such function \textbf{fweight} needs to take a Python list as input and return a value. The default \textbf{fweight} is the arithmetic mean.
 
 		\subsubsection{Output}
-			The object `results' returned by \emph{pymfinder} is a NetworkStats object containing dictionaries of motifs, nodes, and links as well as the network type (unipartite or bipartite) and the size of motifs used. The value for each motif in the .motifs dictionary is an Motif object containing the motif profile for that motif. Similarly, the value for each node or link in the .nodes or .links dictionaries is a NodeLink object containing the motif participation or role of that node or link.
+			The object `results' returned by \emph{pymfinder} is a NetworkStats object containing dictionaries of motifs, nodes, and links. The value for each motif in the .motifs dictionary is an Motif object containing the motif profile for that motif. Similarly, the value for each node or link in the .nodes or .links dictionaries is a NodeLink object containing the motif participation or role of that node or link.
 
 			These results can be collected into text-formatted tables and may be seen using:
 			\begin{lstlisting}
