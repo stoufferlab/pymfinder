@@ -105,7 +105,7 @@ def mfinder_network_setup(network):
         edges, numedges = gen_mfinder_network(network)
         return network, stats, edges, numedges
     elif type(network) == NetworkStats:
-        links = relabel_nodes(network.links.keys())
+        links = relabel_nodes(list(network.links.keys()))
         edges, numedges = gen_mfinder_network(links)
         return links, network, edges, numedges
     else:
