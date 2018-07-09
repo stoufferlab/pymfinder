@@ -138,9 +138,9 @@ class NetworkStats(object):
                                   ]) + '\n'
             output = output + '\n'
 
-        if self.nodes[self.nodes.keys()[0]].motifs != dict():
+        if self.nodes[list(self.nodes.keys())[0]].motifs != dict():
             # set up a header
-            output = output + " ".join(["node"]+list(map(str,sorted(self.nodes[self.nodes.keys()[0]].motifs.keys()))))
+            output = output + " ".join(["node"]+list(map(str,sorted(self.nodes[list(self.nodes.keys())[0]].motifs.keys()))))
             output = output + '\n'
 
             # set up the data itself
@@ -154,9 +154,9 @@ class NetworkStats(object):
                     output = output + " ".join([str(self.nodes[m].id)] + list(map(str,[j for i,j in sorted(self.nodes[m].motifs.items())]))) + '\n'
                 output = output + '\n'
 
-            if self.links[self.links.keys()[0]].motifs != dict():
+            if self.links[list(self.links.keys())[0]].motifs != dict():
                 # set up a header
-                output = output + " ".join(["link"]+list(map(str,sorted(self.links[self.links.keys()[0]].motifs.keys()))))
+                output = output + " ".join(["link"]+list(map(str,sorted(self.links[list(self.links.keys())[0]].motifs.keys()))))
                 output = output + '\n'
 
                 if self.weighted:
@@ -171,10 +171,10 @@ class NetworkStats(object):
                     output = output + '\n'
 
 
-        if self.nodes[self.nodes.keys()[0]].roles != dict():
+        if self.nodes[list(self.nodes.keys())[0]].roles != dict():
             # set up a header
             # DEBUG: consider changing role for ".".join(map(str, role)) fixing problems when STOUFFERID=True
-            output = output+" ".join(["node"]+list(map(str,[role for role in sorted(self.nodes[self.nodes.keys()[0]].roles.keys())])))
+            output = output+" ".join(["node"]+list(map(str,[role for role in sorted(self.nodes[list(self.nodes.keys())[0]].roles.keys())])))
             output = output + '\n'
 
             if self.weighted:
@@ -187,9 +187,9 @@ class NetworkStats(object):
                 output = output + '\n'
 
 
-            if self.links[self.links.keys()[0]].roles != dict():
+            if self.links[list(self.links.keys())[0]].roles != dict():
                 # set up a header
-                output = output + " ".join(["link"]+list(map(str,sorted(self.links[self.links.keys()[0]].roles.keys()))))
+                output = output + " ".join(["link"]+list(map(str,sorted(self.links[list(self.links.keys())[0]].roles.keys()))))
                 output = output + '\n'
 
                 if self.weighted:
