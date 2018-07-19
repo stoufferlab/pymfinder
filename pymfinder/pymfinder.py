@@ -660,8 +660,12 @@ def role_stats(mfinderi,roles,links,networktype,stoufferIDs,allroles,fweight):
     if links:
         possible_linkroles = set([])
         actual_linkroles = set([])
-        for m,l in UNIPARTITE_LINKS_ROLES[mfinderi.MotifSize]:
-            possible_linkroles.update([tuple([m] + list(x)) for x in l])
+        if networktype == "unipartite":
+            for m,l in UNIPARTITE_LINKS_ROLES[mfinderi.MotifSize]:
+                possible_linkroles.update([tuple([m] + list(x)) for x in l])
+        elif networktype == "bipartite":
+            for m,l in BIPARTITE_LINKS_ROLES[mfinderi.MotifSize]:
+                possible_linkroles.update([tuple([m] + list(x)) for x in l])
 
     
     r_l = results.l
