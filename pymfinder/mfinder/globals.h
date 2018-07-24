@@ -67,7 +67,7 @@ extern Res_vec_tbl Roles_res_tbl;
 //final results for role statistics
 extern Role_res *Roles_final_res;
 //Roles members 2 dim array [Role_id][node]
-list **Roles_members;
+extern list **Roles_members;
 
 //Gneralized motifs final res lists
 extern list64 *gmtf_final_res;
