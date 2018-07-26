@@ -743,9 +743,26 @@ def role_stats(mfinderi,roles,links,networktype,stoufferIDs,allroles,fweight):
                             if key not in possible_linkroles:
                                 key = (id, (npred2, nprey2),(npred1, nprey1))
 
+                            # There are three motifs containing links that cannot be uniquely specified by (npred1,nprey1),(npred2,nprey2).
+                            if key not in possible_linkroles:
+                                nconnected=set([othernode for othernode in py_members if othernode != n and (n,othernode) in py_motif])
+                                mconnected=set([othernode for othernode in py_members if othernode != m and (othernode,m) in py_motif])
+
+                                npreypreds=sorted([sum([(i,j) in py_motif for i in py_members if i!=j]) for j in nconnected]) # predators for each prey of n
+                                mpredpreys=sorted([sum([(i,j) in py_motif for j in py_members if j!=i]) for i in mconnected]) # prey for each predator of m
+
+                                # One link has both pred and prey with nonunique roles. 
+                                key = (id, (npred1, nprey1,tuple(npreypreds)),(npred2,nprey2,tuple(mpredpreys)))
+                                # One link has only non-unique predator
+                                if key not in possible_linkroles:
+                                    key= (id, (npred1, nprey1,tuple(npreypreds)),(npred2,nprey2))
+                                # One link has only non-unique prey
+                                if key not in possible_linkroles:
+                                    key = (id, (npred1, nprey1),(npred2,nprey2,tuple(mpredpreys)))
+
                             if key not in possible_linkroles:
                                 print >> sys.stderr, key
-                                print >> sys.stderr, "Apparently there is a role you aren't accounting for in roles.py."
+                                print >> sys.stderr, "Apparently there is a link you aren't accounting for in roles.py."
 
                             try:
                                 roles.links[(n,m)].roles[key] += 1
