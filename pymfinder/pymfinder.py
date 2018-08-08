@@ -252,14 +252,13 @@ def motif_structure(network,
     # setup the network info
     network, stats, web.Edges, web.NumEdges = mfinder_network_setup(network)
 
+    # add or check some basics of stats object
     if stoufferIDs and motifsize!=3:
         sys.stderr.write("Warning: 'stoufferIDs' can only be true when 'motifsize=3' in unipartite networks.\n")
         stats.stoufferIDs = False
     else:
         stats.stoufferIDs = stoufferIDs
 
-
-    # add or check some basics of stats object
     if stats.motifsize:
         if stats.motifsize != motifsize:
             sys.stderr.write("Error: you're trying to mix motif sizes.\n")
@@ -404,14 +403,13 @@ def motif_participation(network,
     # setup the network info
     network, stats, web.Edges, web.NumEdges = mfinder_network_setup(network)
 
+    # add or check some basics of stats object
     if stoufferIDs and motifsize!=3:
         sys.stderr.write("Warning: 'stoufferIDs' can only be true when 'motifsize=3' in unipartite networks.\n")
         stats.stoufferIDs = False
     else:
         stats.stoufferIDs = stoufferIDs
 
-
-    # add or check some basics of stats object
     if stats.motifsize:
         if stats.motifsize != motifsize:
             sys.stderr.write("Error: you're trying to mix motif sizes.\n")
@@ -582,13 +580,13 @@ def motif_roles(network,
     # setup the network info
     network, stats, web.Edges, web.NumEdges = mfinder_network_setup(network)
 
+    # add or check some basics of stats object
     if stoufferIDs and motifsize!=3:
         sys.stderr.write("Warning: 'stoufferIDs' can only be true when 'motifsize=3' in unipartite networks.\n")
         stats.stoufferIDs = False
     else:
         stats.stoufferIDs = stoufferIDs
 
-    # add or check some basics of stats object
     if stats.motifsize:
         if stats.motifsize != motifsize:
             sys.stderr.write("You're trying to mix motif sizes.\n")
