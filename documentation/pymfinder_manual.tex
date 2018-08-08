@@ -165,7 +165,7 @@ $^2$Department of Physics, Chemistry, and Biology (IFM), Link\"{o}ping Universit
      		\item \textbf{network}: This can be a path to a network file, a list of interactions or a NetworkStats object. No default given (see the description in the article presenting the software).
 				\item \textbf{links}: Determines whether or not to calculate statistics for links as well as nodes. If \textbf{links=True}, link participation and roles will be calculated. Defaults to \textbf{links=False}.
 				\item \textbf{motifsize}: Size of motifs to be calculated. Defaults to \textbf{motifsize=3}. There are 13 possible three-species motifs for unipartite networks (Fig.~\ref{fig:3sp_unipartite}). For bipartite networks, there are only four three-species motifs (Fig.~\ref{bipartite_motifs}) and a larger motif size may be necessary. If one needs to analyze the motif structure or the motif participation of motifs $>3$ nodes in unipartite networks or $>6$ nodes in bipartite networks, `motif\_structure' and `motif\_participation' need to be run independently.
-				\item \textbf{stoufferIDs}: Determines whether to label motifs following~\citet{Stouffer2007} or based on the representation of the adjacency matrix of the motif as a binary integer, following the original \emph{mfinder}. If \textbf{stoufferIDs=True}, labels will be as in~\citet{Stouffer2007}. Defaults to \textbf{stoufferIDs=False}.
+				\item \textbf{stoufferIDs}: Determines whether to label motifs following~\citet{Stouffer2007} or based on the representation of the adjacency matrix of the motif as a binary integer, following the original \emph{mfinder}. If \textbf{stoufferIDs=True}, labels will be as in~\citet{Stouffer2007} when printing the pymfinder output. Defaults to \textbf{stoufferIDs=False}.
 				\item \textbf{allmotifs}: If true, displays results for all possible motifs regardless of whether all have been observed. If false, displays only results for motifs observed in the network. Defaults to \textbf{allmotifs=False}.
 				\item \textbf{nrandomizations}: Number of random networks with which to compare the observed network. Defaults to 0 (no randomizations performed).
 				\item \textbf{randomize}: Determines whether or not to randomize the network before analyzing the participation and roles of the nodes and links in the network. If false, no randomization will be applied to the network. Defaults to \textbf{randomize=False}.
@@ -213,7 +213,7 @@ $^2$Department of Physics, Chemistry, and Biology (IFM), Link\"{o}ping Universit
 	\begin{figure}[ht]
 	  \centering
 		\includegraphics*[width=0.9\textwidth]{unipartite_motifs.eps}
-		\caption{The thirteen three-species motifs in unipartite networks. The 30 unique positions are numbered, but note that positions are not in the same order as in the output provided by motif\_roles. [[Recommend we change one or the other, so that they match]] Note also that some motifs contain three unique positions (e.g., positions 5, 6, and 7) while other motifs contain only one or two unique positions.}
+		\caption{The thirteen three-species motifs in unipartite networks. The 30 unique positions are numbered. Note also that some motifs contain three unique positions (e.g., positions 5, 6, and 7) while other motifs contain only one or two unique positions.}
 		\label{fig:3sp_unipartite}
 	\end{figure}
 
@@ -222,7 +222,7 @@ $^2$Department of Physics, Chemistry, and Biology (IFM), Link\"{o}ping Universit
 	  \centering
 		\includegraphics*[width=0.9\textwidth]{bipartite_motifs.eps}
 			  \vspace{0.5cm}
-		\caption{The singe two-species motif, two three-species motifs, four four-species motifs, 10 five-species motifs, and 27 six-species motifs that can be found in bipartite networks. Unique positions are numbered, but note that positions are not in the same order as in the output provided by motif\_roles. If the identity of particular motifs and/or positions is important, be sure to note the motif number and position information provided in the output file.}
+		\caption{The singe two-species motif, two three-species motifs, four four-species motifs, 10 five-species motifs, and 27 six-species motifs that can be found in bipartite networks. Unique positions are numbered. If the identity of particular motifs and/or positions is important, be sure to note the motif number and position information provided in the output file.}
 		\label{bipartite_motifs}
 	\end{figure}
 
