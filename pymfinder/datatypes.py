@@ -84,7 +84,7 @@ class NetworkStats(object):
     # DEBUG: it would be nice to be able to turn the header on and off
     def __str__(self):
 
-        from roles import STOUFFER_MOTIF_IDS
+        from pymfinder.roles import STOUFFER_MOTIF_IDS
 
         if self.stoufferIDs:
             ineligible_ids = [motif_id for motif_id in self.motifs if motif_id not in STOUFFER_MOTIF_IDS]
