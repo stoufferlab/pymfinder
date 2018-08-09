@@ -240,8 +240,12 @@ def motif_structure(network,
         sys.exit()
 
     if motifsize > 8:
-        sys.stderr.write("Warning: this is not a recommended motif size.\n")
+        sys.stderr.write("Error: this is not a recommended motif size.\n")
         sys.exit()
+
+    if motifsize > 4 and allmotifs:
+        sys.stderr.write("Warning: 'allmotifs' will be ignored for this motif size and motif_structure will only register existing motifs in the real network.\n")
+        allmotifs=False
 
     if weighted and nrandomizations > 0:
         sys.stderr.write("Warning: the analysis of weighted motifs won't be performed for the randomized networks, only for the real one. There are different ways to randomize weighted networks, you could define your own and run motif_structure multiple times to find the random distribution of weighted motifs.\n")
@@ -389,8 +393,12 @@ def motif_participation(network,
         sys.exit()
 
     if motifsize > 8:
-        sys.stderr.write("Warning: this is not a recommended motif size.\n")
+        sys.stderr.write("Error: this is not a recommended motif size.\n")
         sys.exit()
+
+    if motifsize > 4 and allmotifs:
+        sys.stderr.write("Warning: 'allmotifs' will be ignored for this motif size and motif_participation will only register existing motifs in the real network.\n")
+        allmotifs=False
 
     # do we want to randomize the network first?
     if randomize:
