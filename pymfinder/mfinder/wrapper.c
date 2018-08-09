@@ -474,7 +474,6 @@ int single_connected_component(int64 id,int mtf_sz){
             if(cc[j] == FALSE){
               cc[j] = TRUE;
               added = TRUE;
-              break;
             }
       }
   }
@@ -590,7 +589,7 @@ list64* list_motifs(int mtf_sz){
         }
       }
       */
-      
+
       list64_free_mem(iso_list);
   }
 
