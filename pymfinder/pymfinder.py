@@ -149,11 +149,20 @@ def list_motifs(motifsize):
 
     return all_motifs
 
-def print_motifs(motifs,motifsize,outFile=None,sep=" ",links=False):
+def print_motifs(motifsize,motifID=None,outFile=None,links=False,sep=" "):
     if outFile:
         fstream = open(outFile,'w')
     else:
         fstream = sys.stdout
+
+    if motifID:
+        motifs=[x for x in list_motifs(motifsize) if int(x)==motifID]
+    else:
+        motifs=list_motifs(motifsize)
+
+    if motifs==[]:
+        sys.stderr.write("Error: this motif does not exist.\n")
+        sys.exit()
 
     for m in motifs:
         output = sep.join(["%i" % m,
@@ -177,7 +186,7 @@ def print_motifs(motifs,motifsize,outFile=None,sep=" ",links=False):
     if outFile:
         fstream.close()
 
-    return   
+    return    
 
 ##############################################################
 ##############################################################
@@ -244,8 +253,12 @@ def motif_structure(network,
         sys.exit()
 
     if motifsize > 8:
-        sys.stderr.write("Warning: this is not a recommended motif size.\n")
+        sys.stderr.write("Error: this is not a recommended motif size.\n")
         sys.exit()
+
+    if motifsize > 4 and allmotifs:
+        sys.stderr.write("Warning: 'allmotifs' will be ignored for this motif size and motif_structure will only register existing motifs in the real network.\n")
+        allmotifs=False
 
     if weighted and nrandomizations > 0:
         sys.stderr.write("Warning: the analysis of weighted motifs won't be performed for the randomized networks, only for the real one. There are different ways to randomize weighted networks, you could define your own and run motif_structure multiple times to find the random distribution of weighted motifs.\n")
@@ -394,8 +407,12 @@ def motif_participation(network,
         sys.exit()
 
     if motifsize > 8:
-        sys.stderr.write("Warning: this is not a recommended motif size.\n")
+        sys.stderr.write("Error: this is not a recommended motif size.\n")
         sys.exit()
+
+    if motifsize > 4 and allmotifs:
+        sys.stderr.write("Warning: 'allmotifs' will be ignored for this motif size and motif_structure will only register existing motifs in the real network.\n")
+        allmotifs=False
 
     # do we want to randomize the network first?
     if randomize:
