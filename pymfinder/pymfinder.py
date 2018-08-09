@@ -149,11 +149,20 @@ def list_motifs(motifsize):
 
     return all_motifs
 
-def print_motifs(motifs,motifsize,outFile=None,sep=" ",links=False):
+def print_motifs(motifsize,motifID=None,outFile=None,links=False,sep=" "):
     if outFile:
         fstream = open(outFile,'w')
     else:
         fstream = sys.stdout
+
+    if motifID:
+        motifs=[x for x in list_motifs(motifsize) if int(x)==motifID]
+    else:
+        motifs=list_motifs(motifsize)
+
+    if motifs==[]:
+        sys.stderr.write("Error: this motif does not exist.\n")
+        sys.exit()
 
     for m in motifs:
         output = sep.join(["%i" % m,
