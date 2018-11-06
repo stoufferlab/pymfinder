@@ -32,7 +32,7 @@ def read_links(filename):
     return links
 
 # turn any type of node label into integers (mfinder is finicky like that)
-def relabel_nodes(links,stats=None):
+def relabel_nodes(links,stats, buildon=False):
     node_dict = {}
     for i in range(len(links)):
         try:
@@ -57,9 +57,11 @@ def relabel_nodes(links,stats=None):
         if t not in node_dict:
             node_dict[t] = len(node_dict)+1
 
-        links[i] = (node_dict[s], node_dict[t], w)
+        if buildon:
+            links[i] = (s, t, stats.links[(s,t)].weight)
 
-        if stats:
+        else:
+            links[i] = (node_dict[s], node_dict[t], w)
             stats.add_link(link_id = (node_dict[s], node_dict[t]), link_name = (s,t))
             stats.links[(node_dict[s], node_dict[t])].weight = w
             try:
@@ -96,22 +98,21 @@ def mfinder_network_setup(network):
         # web.Filename = network
         stats = NetworkStats()
         network = read_links(network)
-        network = relabel_nodes(network,stats)
+        network = relabel_nodes(network,stats, buildon=False)
         edges, numedges = gen_mfinder_network(network)
         return network, stats, edges, numedges
     elif type(network) == type([1,2,3]):
         stats = NetworkStats()
-        network = relabel_nodes(network,stats)
+        network = relabel_nodes(network,stats, buildon=False)
         edges, numedges = gen_mfinder_network(network)
         return network, stats, edges, numedges
     elif type(network) == NetworkStats:
-        links = relabel_nodes(list(network.links.keys()))
+        links = relabel_nodes(list(network.links.keys()), network, buildon=True)
         edges, numedges = gen_mfinder_network(links)
         return links, network, edges, numedges
     else:
         sys.stderr.write("Error: this is an invalid nework input.\n")
         sys.exit()
-
 
 def default_fweight(x):
     return sum(x)/len(x)
@@ -853,7 +854,8 @@ def pymfinder(network,
               nrandomizations = 0,
               randomize = False,
               usemetropolis = False,
-              networktype = "unipartite"
+              networktype = "unipartite",
+              weighted = False
               ):
 
 
@@ -863,7 +865,8 @@ def pymfinder(network,
                                 randomize = randomize,
                                 usemetropolis = usemetropolis,
                                 stoufferIDs = stoufferIDs,
-                                allmotifs = allmotifs)
+                                allmotifs = allmotifs,
+                                weighted = weighted)
 
     stats = motif_roles(stats,
                         links = links,
@@ -872,16 +875,16 @@ def pymfinder(network,
                         usemetropolis = usemetropolis,
                         stoufferIDs = stoufferIDs,
                         networktype = networktype,
-                        allroles = allmotifs)
+                        allroles = allmotifs,
+                        weighted = weighted)
 
     if nrandomizations != 0:
         stats = motif_structure(stats,
                                 motifsize = motifsize,
                                 nrandomizations = nrandomizations,
                                 usemetropolis = usemetropolis,
-                                stoufferIDs = stoufferIDs)
-
-
+                                stoufferIDs = stoufferIDs,
+                                weighted = weighted)
 
     return stats
 
