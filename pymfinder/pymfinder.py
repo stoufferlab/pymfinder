@@ -644,7 +644,7 @@ def motif_roles(network,
     if stats.weighted:
         weighted_motif_stats(web,stats,fweight,allroles)
 
-    #check if this function has already been run
+    #check if this function has already been run. TODO this breaks...
     if len(stats.nodes[stats.nodes.keys()[0]].roles) != 0:
         for x in stats.nodes.keys():
             stats.nodes[x].roles = dict()
