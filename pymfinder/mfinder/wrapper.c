@@ -13,7 +13,6 @@
 #include "mat.h"
 #include "motif_ids.h"
 #include "wrapper.h"
-
 /*************************** Global variables ***************************/
 
 /******************************* Externs ********************************/
@@ -503,6 +502,7 @@ int single_connected_component(int64 id,int mtf_sz){
 
 list64* list_motifs(int mtf_sz){
   int i,j,illegal_id=FALSE;
+  int c,k;
   list64_item *l_tmp;
   int64 id,rep_id,mask_bit,mask_r,mask_c;
 
@@ -512,9 +512,14 @@ list64* list_motifs(int mtf_sz){
   list64_init(&id_list_uniq);
   list64_init(&id_list_scc_false);
 
+  if( (mtf_sz>4) ){
+      printf("NOTICE: I am only returning bipartite motifs for size > 4 because otherwise it's simply too much. I would not recommend running this function for size > 6\n");
+  }
+
+
   for(id=0;id<=(int64)(pow(2,mtf_sz*mtf_sz)-1);id++){
       illegal_id=FALSE;
-      
+
       /*
       //Check if we've already found this id via the motif isomorphisms
       if(list64_get(id_list_all,(int64)id)!=NULL)
@@ -527,6 +532,7 @@ list64* list_motifs(int mtf_sz){
       for(i=0;i<mtf_sz;i++) {
         //bits on the diagonal
         mask_bit=(int64)pow(2,i*mtf_sz+i);
+ 
         if(id & mask_bit) {
           illegal_id = TRUE;
           break;
@@ -535,7 +541,7 @@ list64* list_motifs(int mtf_sz){
       if(illegal_id)
         continue;
 
-      //Check if there is no isolated vertex (a vertex with no edges at all)
+      //Check if there is no isolated vertex (a vertex with no edges at all) AND CHECK IF IT'S BIPARTITE!!!!
       //this is done by checking that there is at list one edge
       //at each row i or column i of the matrix
       //(by bit manipulation)
@@ -546,7 +552,15 @@ list64* list_motifs(int mtf_sz){
           mask_r |= (int64)pow(2,i*mtf_sz+j);
           mask_c |= (int64)pow(2,i+j*mtf_sz);
         }
+
         if( ! ((id & mask_r) || (id & mask_c)) ) {
+          illegal_id = TRUE;
+          break;
+        }
+
+      //Check if it's bipartite
+
+        if( (mtf_sz>4) && ((id & mask_r) && (id & mask_c)) ) {
           illegal_id = TRUE;
           break;
         }

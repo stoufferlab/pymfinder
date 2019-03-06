@@ -23,6 +23,7 @@ class Motif(object):
         self.median_weight = None
         self.thirdq_weight = None
         self.firstq_weight = None
+        self.layer = None
 
     # def __rep__(self):
     #     return(str(self.id))

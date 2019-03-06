@@ -1,7 +1,7 @@
 
 import mfinder.mfinder as cmfinder
 import sys
-from itertools import combinations, permutations
+from itertools import combinations, permutations, product, chain
 from math import sqrt
 from roles import *
 from datatypes import *
@@ -30,6 +30,59 @@ def read_links(filename):
     inFile.close()
 
     return links
+
+def invalidlayer(s):
+    try: 
+        int(s)
+        if int(s)>0:
+            return False
+        else:
+            return True
+    except ValueError:
+        return True
+
+def read_layers(filename, stats):
+    nodes_dict = dict([(stats.nodes[i].id, i) for i in stats.nodes.keys()])
+    inFile = open(filename, 'r')
+    layers = dict()
+    for i in inFile.readlines():
+        l = i.strip().split()
+        if len(l) > 2:
+            inFile.close()
+            sys.stderr.write("Error: there is something peculiar about one of the species in your layers file.\n")
+            sys.exit()
+        if invalidlayer(l[1]):
+            inFile.close()
+            sys.stderr.write("Error: the labelling of the layers need to consecutive integers > 0.\n")
+            sys.exit()
+        if l[0] in layers:
+            inFile.close()
+            sys.stderr.write("Error: species defined multiple times in your layers file.\n")
+            sys.exit()
+        if l[0] not in nodes_dict:
+            inFile.close()
+            sys.stderr.write("Error: a species defined in your layers file is not present in the network.\n")
+            sys.exit()
+        layers[l[0]]=int(l[1])
+
+    inFile.close()
+    nlayers = np.asarray(layers.values())
+    if np.max(nlayers) != len(np.unique(nlayers)):
+        inFile.close()
+        sys.stderr.write("Error: the labelling of the layers need to consecutive integers > 0.\n")
+        sys.exit()
+    else:
+        nlayers = np.max(nlayers)
+
+    for i in nodes_dict:
+        if i not in layers:
+            inFile.close()
+            sys.stderr.write("Error: a species defined in your network is not present in your layers file.\n")
+            sys.exit()
+        stats.nodes[nodes_dict[i]].layer=layers[i]
+
+    return nlayers, stats
+
 
 # turn any type of node label into integers (mfinder is finicky like that)
 def relabel_nodes(links,stats, buildon=False):
@@ -131,6 +184,67 @@ def confidence_interval(data, confidence=0.75):
     ma=n_data[int(round(n*confidence)-1)]
     return av, sd, m, ma, mi
 
+def check_bipartite(motif):
+    bipartite = [(np.sum(motif[i,:])!=0) and (np.sum(motif[:,i])!=0) for i in range(0,len(motif))]
+    return any(bipartite)
+
+def build_motif_from_id(m, motifsize):
+    motif = map(int, format(m,"b").zfill(motifsize**2))
+    motif.reverse()
+    motif = np.asarray(motif).reshape(motifsize,motifsize)
+    return motif
+
+def generate_key(motif, nlayers):
+    lperm = list(product(range(1,nlayers+1), repeat=len(motif)))
+    nprey = np.sum(motif, 1)
+    npred = np.sum(motif, 0)
+    k = nprey+npred
+    roles=dict()
+    for i in range(0, len(motif)):
+        if nlayers==1:
+            key = (npred[i],nprey[i])
+            extra = (tuple(np.sort(nprey[motif[:,i]==1])), tuple(np.sort(npred[motif[i,:]==1])))
+            try:
+                x=roles[key]
+            except KeyError:
+                roles[key] = []
+            roles[key] += [extra]
+        else:
+            for j in lperm:
+                combi = np.asarray(list(j))
+                combi_1 = combi[motif[:,i]==1]
+                combi_2 = combi[motif[i,:]==1]
+                #key = (np.sum(combi_1==j[i]), np.sum(combi_2==j[i]), np.sum(combi_1!=j[i]), np.sum(combi_2!=j[i]))
+                #key = tuple(chain.from_iterable((np.sum(combi_1==l), np.sum(combi_2==l)) for l in range(1,nlayers+1)))
+                key = tuple([j[i]] + list(chain.from_iterable((np.sum(combi_1==l), np.sum(combi_2==l)) for l in range(1,nlayers+1))))
+
+                k_1 = nprey[motif[:,i]==1]
+                k_2 = npred[motif[i,:]==1]
+                #extra = (tuple(k_1[combi_1==j[i]]), tuple(k_2[combi_2==j[i]]), tuple(k_1[combi_1!=j[i]]), tuple(k_2[combi_2!=j[i]]))
+                #extra = tuple(chain.from_iterable((tuple(k_1[combi_1==l]), tuple(k_2[combi_2==l])) for l in range(1,nlayers+1)))
+                extra = tuple([j[i]] + list(chain.from_iterable((tuple(k_1[combi_1==l]), tuple(k_2[combi_2==l])) for l in range(1,nlayers+1))))
+
+                try:
+                    x=roles[key]
+                except KeyError:
+                    roles[key] = []
+                roles[key] += [extra]
+
+
+    _roles=[]
+    for i in roles.keys():
+        if len(set(roles[i]))==1:
+            _roles += [i]
+        else:
+            for j in set(roles[i]):
+                if j in roles:
+                    sys.stderr.write("Check with the developer because something is wrong!\n")
+                    sys.exit()
+                else:
+                    _roles += [j]
+
+    return _roles
+
 
 ##############################################################
 ##############################################################
@@ -188,7 +302,42 @@ def print_motifs(motifsize,motifID=None,outFile=None,links=False,sep=" "):
     if outFile:
         fstream.close()
 
-    return   
+    return
+
+def generate_role_files(motifsize, networktype="unipartite", nlayers=1):
+
+    if motifsize < 2:
+        sys.stderr.write("Error: this is not a valid motif size.\n")
+        sys.exit()
+
+    if motifsize > 4 and networktype=="unipartite":
+        sys.stderr.write("Error: we can generate the unipartite roles for this motif size.\n")
+        sys.exit()
+
+    if motifsize > 6:
+        sys.stderr.write("Error: we can generate the bipartite roles for this motif size.\n")
+        sys.exit()
+
+    #TODO: Sort out size 6
+    if motifsize == 6:
+        all_motifs = [545392672, 62, 4261936, 820, 4260912, 316, 4262960, 828, 4328496, 1836, 4394032, 1852,  12782640,  3900,
+                   34352, 33848, 34344, 33336, 99880, 34360, 35896, 100912, 36408, 99896, 100920, 101944, 233016]
+    else:
+        motifs = cmfinder.list_motifs(motifsize)
+        all_motifs = []
+        motif_result = motifs.l
+        while (motif_result != None):
+            all_motifs.append(motif_result.val)
+            motif_result = motif_result.next
+
+    roles = []
+    for m in all_motifs:
+        motif = build_motif_from_id(m, motifsize)
+        if networktype!="unipartite" and check_bipartite(motif):
+            continue
+        roles += [(m, generate_key(motif, nlayers))]
+
+    return roles
 
 ##############################################################
 ##############################################################
@@ -577,15 +726,16 @@ def motif_roles(network,
                 networktype = "unipartite",
                 allroles = False,
                 weighted = False,
-                fweight = None
+                fweight = None,
+                layers = None
                 ):
 
     if motifsize < 2:
         sys.stderr.write("Error: this is not a valid motif size.\n")
         sys.exit()
 
-    if (networktype=="unipartite" and motifsize>3) or (networktype=="bipartite" and motifsize>6):
-        sys.stderr.write("Error: the analysis of the motif-role profiles can only be done for motif size 2 and 3 in unipartite networks and up to motif size 6 in bipartite networks.\n")
+    if (networktype=="unipartite" and motifsize>4) or (networktype=="bipartite" and motifsize>6):
+        sys.stderr.write("Error: the analysis of the motif-role profiles can only be done for motif size 2, 3 and 4 in unipartite networks and up to motif size 6 in bipartite networks.\n")
         sys.exit()
 
     # do we want to randomize the network first?
@@ -629,6 +779,11 @@ def motif_roles(network,
     if fweight==None:
         fweight = default_fweight
 
+    if layers!=None:
+        nlayers, stats = read_layers(layers, stats)
+    else:
+        nlayers=1
+
     # parameterize the analysis
     web.MotifSize = motifsize
     web.Randomize = 0
@@ -653,21 +808,17 @@ def motif_roles(network,
                 stats.links[x].roles = dict()
 
     # determine all nodes' role statistics
-    return role_stats(web,stats,links,networktype,allroles,fweight)
+    return role_stats(web,stats,links,networktype,allroles,fweight,nlayers)
 
 
-def role_stats(mfinderi,roles,links,networktype,allroles,fweight):
-
+def role_stats(mfinderi,roles,links,networktype,allroles,fweight, nlayers):
     results = cmfinder.motif_participation(mfinderi)
 
     possible_roles = set([])
     actual_roles = set([])
-    if networktype == "unipartite":
-      for m,r in UNIPARTITE_ROLES[mfinderi.MotifSize]:
-          possible_roles.update([tuple([m] + list(x)) for x in r])
-    elif networktype == "bipartite":
-      for m,r in BIPARTITE_ROLES[mfinderi.MotifSize]:
-          possible_roles.update([tuple([m] + list(x)) for x in r])
+
+    for m,r in generate_role_files(mfinderi.MotifSize, networktype=networktype, nlayers=nlayers):
+        possible_roles.update([tuple([m] + list(x)) for x in r])
 
     if links:
         possible_linkroles = set([])
@@ -698,32 +849,49 @@ def role_stats(mfinderi,roles,links,networktype,allroles,fweight):
                 weight = weight_motif/float(sum(weight_i))
 
             for idm, m in enumerate(py_members):
-                npred, nprey = 0, 0
-                for othernode in py_members:
-                    if (othernode,m) in py_motif:
-                        npred+=1
-                    if (m,othernode) in py_motif:
-                        nprey+=1
-
-                key = (id, npred, nprey)
+                if nlayers==1:
+                    npred, nprey = 0, 0
+                    for othernode in py_members:
+                        if (othernode,m) in py_motif:
+                            npred+=1
+                        if (m,othernode) in py_motif:
+                            nprey+=1
+                    key = (id, npred, nprey)
+                else:
+                    key = [id, roles.nodes[m].layer]
+                    for ly in range(1,nlayers+1):
+                        npred, nprey = 0, 0
+                        for othernode in py_members:
+                            if (othernode,m) in py_motif and roles.nodes[othernode].layer==ly:
+                                npred+=1
+                            if (m,othernode) in py_motif and roles.nodes[othernode].layer==ly:
+                                nprey+=1
+                        key += [npred, nprey]
+                    key = tuple(key)
 
                 # if the node's in and out degrees are insufficient to discern its role
                 # we will add the degrees of the nodes it interacts with (its neighbors)
                 if key not in possible_roles:
-                    if npred > 0:
+                    if nlayers==1:
                         connected_to = set([othernode for othernode in py_members if othernode != m and (othernode,m) in py_motif])
-                        npreys = [sum([(i,j) in py_motif for j in py_members if j != i]) for i in connected_to]
-                        npreys.sort()
-                        key = tuple(list(key) + [tuple(npreys)])
-                    else:
+                        npreys = np.sort([sum([(i,j) in py_motif for j in py_members if j != i]) for i in connected_to])
                         connected_to = set([othernode for othernode in py_members if othernode != m and (m,othernode) in py_motif])
-                        npreds = [sum([(j,i) in py_motif for j in py_members if j != i]) for i in connected_to]
-                        npreds.sort()
-                        key = tuple(list(key) + [tuple(npreds)])
+                        npreds = np.sort([sum([(j,i) in py_motif for j in py_members if j != i]) for i in connected_to])
+                        key = tuple([id, tuple(npreys), tuple(npreds)])
+                    else:
+                        key = [id, roles.nodes[m].layer]
+                        for ly in range(1,nlayers+1):
+                            connected_to = set([othernode for othernode in py_members if ((othernode != m) and ((othernode,m) in py_motif) and (roles.nodes[othernode].layer==ly))])
+                            npreys = np.sort([sum([(i,j) in py_motif for j in py_members if j != i]) for i in connected_to])
+                            connected_to = set([othernode for othernode in py_members if ((othernode != m) and ((m,othernode) in py_motif) and (roles.nodes[othernode].layer==ly))])
+                            npreds = np.sort([sum([(j,i) in py_motif for j in py_members if j != i]) for i in connected_to])
+                            key += [tuple(npreys), tuple(npreds)]
+                        key = tuple(key)
+
 
                 if key not in possible_roles:
                     print >> sys.stderr, key
-                    print >> sys.stderr, "Apparently there is a role you aren't accounting for in 'roles.py'."
+                    print >> sys.stderr, "Apparently there is a role you aren't accounting for in 'roles.py'. "
                     sys.exit()
 
                 try:
