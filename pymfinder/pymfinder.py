@@ -199,7 +199,8 @@ def generate_key(motif, nlayers):
     nprey = np.sum(motif, 1)
     npred = np.sum(motif, 0)
     k = nprey+npred
-    roles=dict()
+    roles = dict()
+    roles_ref = dict()
     for i in range(0, len(motif)):
         if nlayers==1:
             key = (npred[i],nprey[i])
@@ -209,6 +210,15 @@ def generate_key(motif, nlayers):
             except KeyError:
                 roles[key] = []
             roles[key] += [extra]
+
+            ###Useful reference dictionary to locate roles and visualize motifs
+            try:
+                x=roles_ref[extra]
+            except KeyError:
+                roles_ref[extra] = dict()
+            roles_ref[extra][i] = 1
+            ###
+
         else:
             for j in lperm:
                 combi = np.asarray(list(j))
@@ -230,11 +240,23 @@ def generate_key(motif, nlayers):
                     roles[key] = []
                 roles[key] += [extra]
 
+                ###Useful reference dictionary to locate roles and visualize motifs
+                try:
+                    x=roles_ref[extra]
+                except KeyError:
+                    roles_ref[extra] = dict()
+                roles_ref[extra][i] = j
+                ###
+
 
     _roles=[]
     for i in roles.keys():
         if len(set(roles[i]))==1:
             _roles += [i]
+            ###Useful reference dictionary to locate roles and visualize motifs
+            roles_ref[i] = roles_ref[list(set(roles[i]))[0]]
+            ###
+
         else:
             for j in set(roles[i]):
                 if j in roles:
@@ -243,8 +265,7 @@ def generate_key(motif, nlayers):
                 else:
                     _roles += [j]
 
-    return _roles
-
+    return _roles, roles_ref
 
 ##############################################################
 ##############################################################
@@ -304,6 +325,43 @@ def print_motifs(motifsize,motifID=None,outFile=None,links=False,sep=" "):
 
     return
 
+def print_role(motifsize, role):
+    motifid = role[0]
+    role = tuple(role[1:])
+    nlayers = int((len(role)-1)*0.5)
+    if nlayers==0:
+        nlayers=1
+    motif = build_motif_from_id(motifid, motifsize)
+    extra , reference = generate_key(motif, nlayers)
+
+    if role not in reference:
+        sys.stderr.write("Error: this role does not exist.\n")
+        sys.exit()
+
+    reference = reference[role]
+
+    output = ""
+    for m in reference:
+        if reference[m]==1:
+            output += "  "+"_"*motifsize+"\n"
+        else:
+            output += "   "+"_"*motifsize+"\n"
+
+        for r in range(motifsize):
+            if r==m:
+                output += "*"
+            else:
+                output += " "
+            if reference[m]!=1:
+                output += str(reference[m][r])
+            output += "|"
+            for c in range(motifsize):
+                output += str(motif[r,c])
+            output += "\n"
+        output += "\n"
+
+    print output
+
 def generate_role_files(motifsize, networktype="unipartite", nlayers=1):
 
     if motifsize < 2:
@@ -335,9 +393,14 @@ def generate_role_files(motifsize, networktype="unipartite", nlayers=1):
         motif = build_motif_from_id(m, motifsize)
         if networktype!="unipartite" and check_bipartite(motif):
             continue
-        roles += [(m, generate_key(motif, nlayers))]
+        _roles , extra = generate_key(motif, nlayers)
+        roles += [(m, _roles)]
 
-    return roles
+    finalform=set([])
+    for m,r in roles:
+        finalform.update([tuple([m] + list(x)) for x in r])
+
+    return finalform
 
 ##############################################################
 ##############################################################
@@ -813,12 +876,10 @@ def motif_roles(network,
 
 def role_stats(mfinderi,roles,links,networktype,allroles,fweight, nlayers):
     results = cmfinder.motif_participation(mfinderi)
-
-    possible_roles = set([])
     actual_roles = set([])
 
-    for m,r in generate_role_files(mfinderi.MotifSize, networktype=networktype, nlayers=nlayers):
-        possible_roles.update([tuple([m] + list(x)) for x in r])
+    possible_roles = generate_role_files(mfinderi.MotifSize, networktype=networktype, nlayers=nlayers)
+
 
     if links:
         possible_linkroles = set([])
