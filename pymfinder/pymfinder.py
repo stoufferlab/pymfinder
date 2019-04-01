@@ -194,6 +194,40 @@ def build_motif_from_id(m, motifsize):
     motif = np.asarray(motif).reshape(motifsize,motifsize)
     return motif
 
+def find_motifs(motif, nlayers, size):
+    motif = build_motif_from_id(motif, size)
+    lperm = list(product(range(1,nlayers+1), repeat=len(motif)))
+    nprey = np.sum(motif, 1)
+    npred = np.sum(motif, 0)
+    k = nprey+npred
+    roles = dict()
+    for j in lperm:
+        extra = []
+        for i in range(0, len(motif)):
+            combi = np.asarray(list(j))
+            combi_1 = combi[motif[:,i]==1]
+            combi_2 = combi[motif[i,:]==1]
+            #key = (np.sum(combi_1==j[i]), np.sum(combi_2==j[i]), np.sum(combi_1!=j[i]), np.sum(combi_2!=j[i]))
+            #key = tuple(chain.from_iterable((np.sum(combi_1==l), np.sum(combi_2==l)) for l in range(1,nlayers+1)))
+            key = tuple([j[i]] + list(chain.from_iterable((np.sum(combi_1==l), np.sum(combi_2==l)) for l in range(1,nlayers+1))))
+            k_1 = nprey[motif[:,i]==1]
+            k_2 = npred[motif[i,:]==1]
+            #extra = (tuple(k_1[combi_1==j[i]]), tuple(k_2[combi_2==j[i]]), tuple(k_1[combi_1!=j[i]]), tuple(k_2[combi_2!=j[i]]))
+            #extra = tuple(chain.from_iterable((tuple(k_1[combi_1==l]), tuple(k_2[combi_2==l])) for l in range(1,nlayers+1)))
+            extra += [tuple([j[i]] + list(chain.from_iterable((tuple(k_1[combi_1==l]), tuple(k_2[combi_2==l])) for l in range(1,nlayers+1))))]
+
+        extra = tuple(set(extra))
+        try:
+            x=roles[extra]
+        except KeyError:
+            roles[extra] = []
+        roles[extra] += [j]
+
+    for j in roles:
+        set(roles[j])
+
+    return roles
+
 def generate_key(motif, nlayers):
     lperm = list(product(range(1,nlayers+1), repeat=len(motif)))
     nprey = np.sum(motif, 1)
