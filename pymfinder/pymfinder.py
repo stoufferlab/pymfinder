@@ -194,40 +194,6 @@ def build_motif_from_id(m, motifsize):
     motif = np.asarray(motif).reshape(motifsize,motifsize)
     return motif
 
-def find_motifs(motif, nlayers, size):
-    motif = build_motif_from_id(motif, size)
-    lperm = list(product(range(1,nlayers+1), repeat=len(motif)))
-    nprey = np.sum(motif, 1)
-    npred = np.sum(motif, 0)
-    k = nprey+npred
-    roles = dict()
-    for j in lperm:
-        extra = []
-        for i in range(0, len(motif)):
-            combi = np.asarray(list(j))
-            combi_1 = combi[motif[:,i]==1]
-            combi_2 = combi[motif[i,:]==1]
-            #key = (np.sum(combi_1==j[i]), np.sum(combi_2==j[i]), np.sum(combi_1!=j[i]), np.sum(combi_2!=j[i]))
-            #key = tuple(chain.from_iterable((np.sum(combi_1==l), np.sum(combi_2==l)) for l in range(1,nlayers+1)))
-            key = tuple([j[i]] + list(chain.from_iterable((np.sum(combi_1==l), np.sum(combi_2==l)) for l in range(1,nlayers+1))))
-            k_1 = nprey[motif[:,i]==1]
-            k_2 = npred[motif[i,:]==1]
-            #extra = (tuple(k_1[combi_1==j[i]]), tuple(k_2[combi_2==j[i]]), tuple(k_1[combi_1!=j[i]]), tuple(k_2[combi_2!=j[i]]))
-            #extra = tuple(chain.from_iterable((tuple(k_1[combi_1==l]), tuple(k_2[combi_2==l])) for l in range(1,nlayers+1)))
-            extra += [tuple([j[i]] + list(chain.from_iterable((tuple(np.sort(k_1[combi_1==l])), tuple(np.sort(k_2[combi_2==l]))) for l in range(1,nlayers+1))))]
-
-        extra = tuple(set(extra))
-        try:
-            x=roles[extra]
-        except KeyError:
-            roles[extra] = []
-        roles[extra] += [j]
-
-    for j in roles:
-        set(roles[j])
-
-    return roles
-
 def generate_key(motif, nlayers):
     lperm = list(product(range(1,nlayers+1), repeat=len(motif)))
     nprey = np.sum(motif, 1)
@@ -396,7 +362,7 @@ def print_role(motifsize, role):
 
     print output
 
-def generate_role_files(motifsize, networktype="unipartite", nlayers=1):
+def generate_role_files(motifsize, networktype="unipartite", nlayers=1, layers_method="complete"):
 
     if motifsize < 2:
         sys.stderr.write("Error: this is not a valid motif size.\n")
@@ -824,7 +790,8 @@ def motif_roles(network,
                 allroles = False,
                 weighted = False,
                 fweight = None,
-                layers = None
+                layers = None,
+                layers_method = "complete"
                 ):
 
     if motifsize < 2:
@@ -877,6 +844,9 @@ def motif_roles(network,
         fweight = default_fweight
 
     if layers!=None:
+        if layers_method not in ["complete", "simple"]:
+            sys.stderr.write("Error: the variable layers_method should be set to either 'complete' or 'simple'. Default 'complete'.\n")
+            sys.exit()
         nlayers, stats = read_layers(layers, stats)
     else:
         nlayers=1
@@ -905,14 +875,14 @@ def motif_roles(network,
                 stats.links[x].roles = dict()
 
     # determine all nodes' role statistics
-    return role_stats(web,stats,links,networktype,allroles,fweight,nlayers)
+    return role_stats(web,stats,links,networktype,allroles,fweight,nlayers,layers_method)
 
 
-def role_stats(mfinderi,roles,links,networktype,allroles,fweight, nlayers):
+def role_stats(mfinderi,roles,links,networktype,allroles,fweight, nlayers,layers_method):
     results = cmfinder.motif_participation(mfinderi)
     actual_roles = set([])
 
-    possible_roles = generate_role_files(mfinderi.MotifSize, networktype=networktype, nlayers=nlayers)
+    possible_roles = generate_role_files(mfinderi.MotifSize, networktype=networktype, nlayers=nlayers, layers_method=layers_method)
 
 
     if links:
