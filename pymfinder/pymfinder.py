@@ -214,7 +214,7 @@ def find_motifs(motif, nlayers, size):
             k_2 = npred[motif[i,:]==1]
             #extra = (tuple(k_1[combi_1==j[i]]), tuple(k_2[combi_2==j[i]]), tuple(k_1[combi_1!=j[i]]), tuple(k_2[combi_2!=j[i]]))
             #extra = tuple(chain.from_iterable((tuple(k_1[combi_1==l]), tuple(k_2[combi_2==l])) for l in range(1,nlayers+1)))
-            extra += [tuple([j[i]] + list(chain.from_iterable((tuple(k_1[combi_1==l]), tuple(k_2[combi_2==l])) for l in range(1,nlayers+1))))]
+            extra += [tuple([j[i]] + list(chain.from_iterable((tuple(np.sort(k_1[combi_1==l])), tuple(np.sort(k_2[combi_2==l]))) for l in range(1,nlayers+1))))]
 
         extra = tuple(set(extra))
         try:
@@ -266,7 +266,7 @@ def generate_key(motif, nlayers):
                 k_2 = npred[motif[i,:]==1]
                 #extra = (tuple(k_1[combi_1==j[i]]), tuple(k_2[combi_2==j[i]]), tuple(k_1[combi_1!=j[i]]), tuple(k_2[combi_2!=j[i]]))
                 #extra = tuple(chain.from_iterable((tuple(k_1[combi_1==l]), tuple(k_2[combi_2==l])) for l in range(1,nlayers+1)))
-                extra = tuple([j[i]] + list(chain.from_iterable((tuple(k_1[combi_1==l]), tuple(k_2[combi_2==l])) for l in range(1,nlayers+1))))
+                extra = tuple([j[i]] + list(chain.from_iterable((tuple(np.sort(k_1[combi_1==l])), tuple(np.sort(k_2[combi_2==l]))) for l in range(1,nlayers+1))))
 
                 try:
                     x=roles[key]
