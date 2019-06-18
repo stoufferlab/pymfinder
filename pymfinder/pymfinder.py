@@ -194,7 +194,7 @@ def build_motif_from_id(m, motifsize):
     motif = np.asarray(motif).reshape(motifsize,motifsize)
     return motif
 
-def generate_key(motif, nlayers):
+def generate_key(motif, nlayers, layers_method="complex"):
     lperm = list(product(range(1,nlayers+1), repeat=len(motif)))
     nprey = np.sum(motif, 1)
     npred = np.sum(motif, 0)
@@ -224,15 +224,14 @@ def generate_key(motif, nlayers):
                 combi = np.asarray(list(j))
                 combi_1 = combi[motif[:,i]==1]
                 combi_2 = combi[motif[i,:]==1]
-                #key = (np.sum(combi_1==j[i]), np.sum(combi_2==j[i]), np.sum(combi_1!=j[i]), np.sum(combi_2!=j[i]))
-                #key = tuple(chain.from_iterable((np.sum(combi_1==l), np.sum(combi_2==l)) for l in range(1,nlayers+1)))
-                key = tuple([j[i]] + list(chain.from_iterable((np.sum(combi_1==l), np.sum(combi_2==l)) for l in range(1,nlayers+1))))
-
                 k_1 = nprey[motif[:,i]==1]
                 k_2 = npred[motif[i,:]==1]
-                #extra = (tuple(k_1[combi_1==j[i]]), tuple(k_2[combi_2==j[i]]), tuple(k_1[combi_1!=j[i]]), tuple(k_2[combi_2!=j[i]]))
-                #extra = tuple(chain.from_iterable((tuple(k_1[combi_1==l]), tuple(k_2[combi_2==l])) for l in range(1,nlayers+1)))
-                extra = tuple([j[i]] + list(chain.from_iterable((tuple(np.sort(k_1[combi_1==l])), tuple(np.sort(k_2[combi_2==l]))) for l in range(1,nlayers+1))))
+                if layers_method=="simple":
+                    key = tuple([j[i]] + list((np.sum(combi_1==j[i]), np.sum(combi_2==j[i]), np.sum(combi_1!=j[i]), np.sum(combi_2!=j[i]))))
+                    extra = tuple([j[i]] + list((tuple(np.sort(k_1[combi_1==j[i]])), tuple(np.sort(k_2[combi_2==j[i]])), tuple(np.sort(k_1[combi_1!=j[i]])), tuple(np.sort(k_2[combi_2!=j[i]])))))
+                else:
+                    key = tuple([j[i]] + list(chain.from_iterable((np.sum(combi_1==l), np.sum(combi_2==l)) for l in range(1,nlayers+1))))
+                    extra = tuple([j[i]] + list(chain.from_iterable((tuple(np.sort(k_1[combi_1==l])), tuple(np.sort(k_2[combi_2==l]))) for l in range(1,nlayers+1))))
 
                 try:
                     x=roles[key]
@@ -393,7 +392,7 @@ def generate_role_files(motifsize, networktype="unipartite", nlayers=1, layers_m
         motif = build_motif_from_id(m, motifsize)
         if networktype!="unipartite" and check_bipartite(motif):
             continue
-        _roles , extra = generate_key(motif, nlayers)
+        _roles , extra = generate_key(motif, nlayers, layers_method)
         roles += [(m, _roles)]
 
     finalform=set([])
