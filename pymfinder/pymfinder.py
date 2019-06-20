@@ -194,7 +194,7 @@ def build_motif_from_id(m, motifsize):
     motif = np.asarray(motif).reshape(motifsize,motifsize)
     return motif
 
-def generate_key(motif, nlayers, layers_method="complex"):
+def generate_key(motif, nlayers, layers_method="complete"):
     lperm = list(product(range(1,nlayers+1), repeat=len(motif)))
     nprey = np.sum(motif, 1)
     npred = np.sum(motif, 0)
