@@ -201,8 +201,8 @@ def generate_key(motif, nlayers, layers_method="complex"):
     k = nprey+npred
     roles = dict()
     roles_ref = dict()
-    for i in range(0, len(motif)):
-        if nlayers==1:
+    if nlayers==1:
+        for i in range(0, len(motif)):
             key = (npred[i],nprey[i])
             extra = (tuple(np.sort(nprey[motif[:,i]==1])), tuple(np.sort(npred[motif[i,:]==1])))
             try:
@@ -219,8 +219,11 @@ def generate_key(motif, nlayers, layers_method="complex"):
             roles_ref[extra][i] = 1
             ###
 
-        else:
-            for j in lperm:
+    else:
+        for j in lperm:
+            _key=dict()
+            _extra=dict()
+            for i in range(0, len(motif)):
                 combi = np.asarray(list(j))
                 combi_1 = combi[motif[:,i]==1]
                 combi_2 = combi[motif[i,:]==1]
@@ -232,6 +235,15 @@ def generate_key(motif, nlayers, layers_method="complex"):
                 else:
                     key = tuple([j[i]] + list(chain.from_iterable((np.sum(combi_1==l), np.sum(combi_2==l)) for l in range(1,nlayers+1))))
                     extra = tuple([j[i]] + list(chain.from_iterable((tuple(np.sort(k_1[combi_1==l])), tuple(np.sort(k_2[combi_2==l]))) for l in range(1,nlayers+1))))
+
+                _key[i]=key
+                _extra[i]=extra
+
+            lkey = int("".join([str(i[0]) for i in sorted(set(_extra.values()))]))
+
+            for i in range(0, len(motif)):
+                key=tuple(list(_key[i])+[lkey])
+                extra=tuple(list(_extra[i])+[lkey])
 
                 try:
                     x=roles[key]
@@ -246,7 +258,6 @@ def generate_key(motif, nlayers, layers_method="complex"):
                     roles_ref[extra] = dict()
                 roles_ref[extra][i] = j
                 ###
-
 
     _roles=[]
     for i in roles.keys():
@@ -912,8 +923,8 @@ def role_stats(mfinderi,roles,links,networktype,allroles,fweight, nlayers,layers
                 weight_i = [fweight([roles.links[x].weight for x in py_motif if x[0]==m or x[1]==m]) for m in py_members]
                 weight = weight_motif/float(sum(weight_i))
 
-            for idm, m in enumerate(py_members):
-                if nlayers==1:
+            if nlayers==1:
+                for idm, m in enumerate(py_members):
                     npred, nprey = 0, 0
                     for othernode in py_members:
                         if (othernode,m) in py_motif:
@@ -921,8 +932,37 @@ def role_stats(mfinderi,roles,links,networktype,allroles,fweight, nlayers,layers
                         if (m,othernode) in py_motif:
                             nprey+=1
                     key = (id, npred, nprey)
-                else:
-                    key = [id, roles.nodes[m].layer]
+
+                    if key not in possible_roles:
+                        connected_to = set([othernode for othernode in py_members if othernode != m and (othernode,m) in py_motif])
+                        npreys = np.sort([sum([(i,j) in py_motif for j in py_members if j != i]) for i in connected_to])
+                        connected_to = set([othernode for othernode in py_members if othernode != m and (m,othernode) in py_motif])
+                        npreds = np.sort([sum([(j,i) in py_motif for j in py_members if j != i]) for i in connected_to])
+                        key = tuple([id, tuple(npreys), tuple(npreds)])
+
+                    if key not in possible_roles:
+                        print >> sys.stderr, key
+                        print >> sys.stderr, "Apparently there is a role you aren't accounting for in 'roles.py'. "
+                        sys.exit()
+
+                    try:
+                        roles.nodes[m].roles[key] += 1
+                    except KeyError:
+                        roles.nodes[m].roles[key] = 1
+    
+                    if roles.weighted:
+                        try:
+                            roles.nodes[m].weighted_roles[key] += weight_i[idm]*weight
+                        except KeyError:
+                            roles.nodes[m].weighted_roles[key] = weight_i[idm]*weight
+
+                    actual_roles.add(key)
+
+            else:
+                key=dict()
+                extra=dict()
+                for idm, m in enumerate(py_members):
+                    key[idm] = [id, roles.nodes[m].layer]
                     for ly in range(1,nlayers+1):
                         npred, nprey = 0, 0
                         for othernode in py_members:
@@ -930,100 +970,98 @@ def role_stats(mfinderi,roles,links,networktype,allroles,fweight, nlayers,layers
                                 npred+=1
                             if (m,othernode) in py_motif and roles.nodes[othernode].layer==ly:
                                 nprey+=1
-                        key += [npred, nprey]
-                    key = tuple(key)
+                        key[idm] += [npred, nprey]
+                    key[idm] = tuple(key[idm])
 
-                # if the node's in and out degrees are insufficient to discern its role
-                # we will add the degrees of the nodes it interacts with (its neighbors)
-                if key not in possible_roles:
-                    if nlayers==1:
-                        connected_to = set([othernode for othernode in py_members if othernode != m and (othernode,m) in py_motif])
+
+                    extra[idm] = [id, roles.nodes[m].layer]
+                    for ly in range(1,nlayers+1):
+                        connected_to = set([othernode for othernode in py_members if ((othernode != m) and ((othernode,m) in py_motif) and (roles.nodes[othernode].layer==ly))])
                         npreys = np.sort([sum([(i,j) in py_motif for j in py_members if j != i]) for i in connected_to])
-                        connected_to = set([othernode for othernode in py_members if othernode != m and (m,othernode) in py_motif])
+                        connected_to = set([othernode for othernode in py_members if ((othernode != m) and ((m,othernode) in py_motif) and (roles.nodes[othernode].layer==ly))])
                         npreds = np.sort([sum([(j,i) in py_motif for j in py_members if j != i]) for i in connected_to])
-                        key = tuple([id, tuple(npreys), tuple(npreds)])
+                        extra[idm] += [tuple(npreys), tuple(npreds)]
+                    extra[idm] = tuple(extra[idm])
+                
+                lkey = int("".join([str(_i[0]) for _i in sorted(set(extra.values()))]))
+
+                for idm, m in enumerate(py_members):
+                    if key[m] not in possible_roles:
+                        _key = tuple(list(key[m])+[lkey])
                     else:
-                        key = [id, roles.nodes[m].layer]
-                        for ly in range(1,nlayers+1):
-                            connected_to = set([othernode for othernode in py_members if ((othernode != m) and ((othernode,m) in py_motif) and (roles.nodes[othernode].layer==ly))])
-                            npreys = np.sort([sum([(i,j) in py_motif for j in py_members if j != i]) for i in connected_to])
-                            connected_to = set([othernode for othernode in py_members if ((othernode != m) and ((m,othernode) in py_motif) and (roles.nodes[othernode].layer==ly))])
-                            npreds = np.sort([sum([(j,i) in py_motif for j in py_members if j != i]) for i in connected_to])
-                            key += [tuple(npreys), tuple(npreds)]
-                        key = tuple(key)
+                        _key = tuple(list(extra[m])+[lkey])
 
+                    if _key not in possible_roles:
+                        print >> sys.stderr, _key
+                        print >> sys.stderr, "Apparently there is a role you aren't accounting for in 'roles.py'. "
+                        sys.exit()
 
-                if key not in possible_roles:
-                    print >> sys.stderr, key
-                    print >> sys.stderr, "Apparently there is a role you aren't accounting for in 'roles.py'. "
-                    sys.exit()
-
-                try:
-                    roles.nodes[m].roles[key] += 1
-                except KeyError:
-                    roles.nodes[m].roles[key] = 1
-
-                if roles.weighted:
                     try:
-                        roles.nodes[m].weighted_roles[key] += weight_i[idm]*weight
+                        roles.nodes[m].roles[_key] += 1
                     except KeyError:
-                        roles.nodes[m].weighted_roles[key] = weight_i[idm]*weight
+                        roles.nodes[m].roles[_key] = 1
+    
+                    if roles.weighted:
+                        try:
+                            roles.nodes[m].weighted_roles[_key] += weight_i[idm]*weight
+                        except KeyError:
+                            roles.nodes[m].weighted_roles[_key] = weight_i[idm]*weight
 
-
-                actual_roles.add(key)
+                    actual_roles.add(_key)
 
                 if links:
-                    for n in py_members:
-                        if n!=m and (n,m) in roles.links: 
-                            npred1,npred2,nprey1,nprey2 = 0,0,0,0
-                            for othernode in py_members:
-                                if (othernode,n) in py_motif:
-                                    npred1+=1
-                                if (n,othernode) in py_motif:
-                                    nprey1+=1
-                                if (othernode,m) in py_motif:
-                                    npred2+=1
-                                if (m,othernode) in py_motif:
-                                    nprey2+=1
+                    for idm, m in enumerate(py_members):
+                        for n in py_members:
+                            if n!=m and (n,m) in roles.links: 
+                                npred1,npred2,nprey1,nprey2 = 0,0,0,0
+                                for othernode in py_members:
+                                    if (othernode,n) in py_motif:
+                                        npred1+=1
+                                    if (n,othernode) in py_motif:
+                                        nprey1+=1
+                                    if (othernode,m) in py_motif:
+                                        npred2+=1
+                                    if (m,othernode) in py_motif:
+                                        nprey2+=1
 
-                            key = (id, (npred1, nprey1),(npred2, nprey2))
+                                key = (id, (npred1, nprey1),(npred2, nprey2))
 
-                            if key not in possible_linkroles:
-                                key = (id, (npred2, nprey2),(npred1, nprey1))
-
-                            # There are three motifs containing links that cannot be uniquely specified by (npred1,nprey1),(npred2,nprey2).
-                            if key not in possible_linkroles:
-                                nconnected=set([othernode for othernode in py_members if othernode != n and (n,othernode) in py_motif])
-                                mconnected=set([othernode for othernode in py_members if othernode != m and (othernode,m) in py_motif])
-
-                                npreypreds=sorted([sum([(i,j) in py_motif for i in py_members if i!=j]) for j in nconnected]) # predators for each prey of n
-                                mpredpreys=sorted([sum([(i,j) in py_motif for j in py_members if j!=i]) for i in mconnected]) # prey for each predator of m
-
-                                # One link has both pred and prey with nonunique roles. 
-                                key = (id, (npred1, nprey1,tuple(npreypreds)),(npred2,nprey2,tuple(mpredpreys)))
-                                # One link has only non-unique predator
                                 if key not in possible_linkroles:
-                                    key= (id, (npred1, nprey1,tuple(npreypreds)),(npred2,nprey2))
-                                # One link has only non-unique prey
+                                    key = (id, (npred2, nprey2),(npred1, nprey1))
+
+                                # There are three motifs containing links that cannot be uniquely specified by (npred1,nprey1),(npred2,nprey2).
                                 if key not in possible_linkroles:
-                                    key = (id, (npred1, nprey1),(npred2,nprey2,tuple(mpredpreys)))
+                                    nconnected=set([othernode for othernode in py_members if othernode != n and (n,othernode) in py_motif])
+                                    mconnected=set([othernode for othernode in py_members if othernode != m and (othernode,m) in py_motif])
 
-                            if key not in possible_linkroles:
-                                print >> sys.stderr, key
-                                print >> sys.stderr, "Apparently there is a link you aren't accounting for in roles.py."
+                                    npreypreds=sorted([sum([(i,j) in py_motif for i in py_members if i!=j]) for j in nconnected]) # predators for each prey of n
+                                    mpredpreys=sorted([sum([(i,j) in py_motif for j in py_members if j!=i]) for i in mconnected]) # prey for each predator of m
 
-                            try:
-                                roles.links[(n,m)].roles[key] += 1
-                            except KeyError:
-                                roles.links[(n,m)].roles[key] = 1
+                                    # One link has both pred and prey with nonunique roles. 
+                                    key = (id, (npred1, nprey1,tuple(npreypreds)),(npred2,nprey2,tuple(mpredpreys)))
+                                    # One link has only non-unique predator
+                                    if key not in possible_linkroles:
+                                        key= (id, (npred1, nprey1,tuple(npreypreds)),(npred2,nprey2))
+                                    # One link has only non-unique prey
+                                    if key not in possible_linkroles:
+                                        key = (id, (npred1, nprey1),(npred2,nprey2,tuple(mpredpreys)))
 
-                            if roles.weighted:
+                                if key not in possible_linkroles:
+                                    print >> sys.stderr, key
+                                    print >> sys.stderr, "Apparently there is a link you aren't accounting for in roles.py."
+
                                 try:
-                                    roles.links[(n,m)].weighted_roles[key] += weight_motif
+                                    roles.links[(n,m)].roles[key] += 1
                                 except KeyError:
-                                    roles.links[(n,m)].weighted_roles[key] = weight_motif
+                                    roles.links[(n,m)].roles[key] = 1
 
-                            actual_linkroles.add(key)
+                                if roles.weighted:
+                                    try:
+                                        roles.links[(n,m)].weighted_roles[key] += weight_motif
+                                    except KeyError:
+                                        roles.links[(n,m)].weighted_roles[key] = weight_motif
+
+                                actual_linkroles.add(key)
 
             am_l = am_l.next
 
