@@ -239,7 +239,7 @@ def generate_key(motif, nlayers, layers_method="complete"):
                 _key[i]=key
                 _extra[i]=extra
 
-            lkey = int("".join([str(i[0]) for i in sorted(set(_extra.values()))]))
+            lkey = int("".join([str(i[0]) for i in sorted(_extra.values())]))
 
             for i in range(0, len(motif)):
                 key=tuple(list(_key[i])+[lkey])
@@ -698,6 +698,10 @@ def motif_participation(network,
 
 def participation_stats(mfinderi, participation, links, allmotifs, fweight):
 
+    #TODO This is sooooo coooool!
+    #possible_roles = generate_role_files(mfinderi.MotifSize, networktype=networktype, nlayers=nlayers, layers_method=layers_method)
+    #possible_motifs = set([tuple([i[0], i[len(i)-1]]) for i in possible_roles])
+
     results = cmfinder.motif_participation(mfinderi)
 
     r_l = results.l
@@ -983,7 +987,7 @@ def role_stats(mfinderi,roles,links,networktype,allroles,fweight, nlayers,layers
                         extra[idm] += [tuple(npreys), tuple(npreds)]
                     extra[idm] = tuple(extra[idm])
                 
-                lkey = int("".join([str(_i[0]) for _i in sorted(set(extra.values()))]))
+                lkey = int("".join([str(_i[0]) for _i in sorted(extra.values())]))
 
                 for idm, m in enumerate(py_members):
                     if key[m] not in possible_roles:
