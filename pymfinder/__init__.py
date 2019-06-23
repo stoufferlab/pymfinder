@@ -5,6 +5,7 @@ __all__ = [
         'generate_role_files',
 	'print_motifs',
 	'print_role',
+	'print_motif',
 	'random_network',
 	'motif_structure',
 	'motif_participation',
@@ -12,7 +13,7 @@ __all__ = [
         'pymfinder',
 	]
 
-from pymfinder import generate_role_files, list_motifs, print_motifs, print_role
+from pymfinder import generate_role_files, list_motifs, print_motifs, print_role, print_motif
 from pymfinder import random_network
 from pymfinder import motif_structure
 from pymfinder import motif_participation

@@ -372,6 +372,41 @@ def print_role(motifsize, role):
 
     print output
 
+def print_motif(motifsize, code, nlayers):
+    motifid = code[0]
+    motif = build_motif_from_id(motifid, motifsize)
+    extra , reference = generate_key(motif, nlayers)
+
+    for i in reference.keys():
+        if i[len(i)-1]==code[1]:
+            idx=i
+            break
+        else:
+            idx=None
+            continue
+
+    if i:
+        reference = reference[i].values()
+    else:
+        sys.stderr.write("Error: this motif does not exist.\n")
+        sys.exit()
+
+    output = ""
+    for m in reference:
+        output += "   "+"_"*motifsize+"\n"
+
+        for r in range(motifsize):
+            output += " "
+            output += str(m[r])
+            output += "|"
+            for c in range(motifsize):
+                output += str(motif[r,c])
+            output += "\n"
+        output += "\n"
+
+    print output
+
+
 def generate_role_files(motifsize, networktype="unipartite", nlayers=1, layers_method="complete"):
 
     if motifsize < 2:
@@ -616,9 +651,12 @@ def motif_participation(network,
                         randomize = False,
                         usemetropolis = False,
                         stoufferIDs = False,
+                        networktype = "unipartite",
                         allmotifs = False,
                         weighted = False,
-                        fweight = None
+                        fweight = None,
+                        layers = None,
+                        layers_method = "complete"
                         ):
 
     if motifsize < 2:
@@ -670,6 +708,14 @@ def motif_participation(network,
     if fweight==None:
         fweight = default_fweight
 
+    if layers!=None:
+        if layers_method not in ["complete", "simple"]:
+            sys.stderr.write("Error: the variable layers_method should be set to either 'complete' or 'simple'. Default 'complete'.\n")
+            sys.exit()
+        nlayers, stats = read_layers(layers, stats)
+    else:
+        nlayers=1
+
     # parameterize the analysis
     web.MotifSize = motifsize
     web.Randomize = 0
@@ -693,16 +739,16 @@ def motif_participation(network,
             for x in stats.links.keys():
                 stats.links[x].motifs = dict()
 
-    return participation_stats(web,stats,links,allmotifs,fweight)
+    return participation_stats(web,stats,links,networktype,allmotifs,fweight,nlayers,layers_method)
 
 
-def participation_stats(mfinderi, participation, links, allmotifs, fweight):
-
-    #TODO This is sooooo coooool!
-    #possible_roles = generate_role_files(mfinderi.MotifSize, networktype=networktype, nlayers=nlayers, layers_method=layers_method)
-    #possible_motifs = set([tuple([i[0], i[len(i)-1]]) for i in possible_roles])
+def participation_stats(mfinderi, participation, links,networktype, allmotifs, fweight,nlayers,layers_method):
 
     results = cmfinder.motif_participation(mfinderi)
+
+    if nlayers>1:
+        possible_roles = generate_role_files(mfinderi.MotifSize, networktype=networktype, nlayers=nlayers, layers_method=layers_method)
+        possible_motifs = set([tuple([i[0], i[len(i)-1]]) for i in possible_roles])
 
     r_l = results.l
     members = cmfinder.intArray(mfinderi.MotifSize)
@@ -715,39 +761,77 @@ def participation_stats(mfinderi, participation, links, allmotifs, fweight):
             cmfinder.get_motif_members(am_l.p, members, mfinderi.MotifSize)
             py_members = [int(members[i]) for i in xrange(mfinderi.MotifSize)]
 
+            if nlayers>1:
+                py_motif = [x for x in permutations(py_members, 2) if x in participation.links]
+
+                key=dict()
+                extra=dict()
+                for idm, m in enumerate(py_members):
+                    key[idm] = [id, participation.nodes[m].layer]
+                    for ly in range(1,nlayers+1):
+                        npred, nprey = 0, 0
+                        for othernode in py_members:
+                            if (othernode,m) in py_motif and participation.nodes[othernode].layer==ly:
+                                npred+=1
+                            if (m,othernode) in py_motif and participation.nodes[othernode].layer==ly:
+                                nprey+=1
+                        key[idm] += [npred, nprey]
+                    key[idm] = tuple(key[idm])
+
+
+                    extra[idm] = [id, participation.nodes[m].layer]
+                    for ly in range(1,nlayers+1):
+                        connected_to = set([othernode for othernode in py_members if ((othernode != m) and ((othernode,m) in py_motif) and (participation.nodes[othernode].layer==ly))])
+                        npreys = np.sort([sum([(i,j) in py_motif for j in py_members if j != i]) for i in connected_to])
+                        connected_to = set([othernode for othernode in py_members if ((othernode != m) and ((m,othernode) in py_motif) and (participation.nodes[othernode].layer==ly))])
+                        npreds = np.sort([sum([(j,i) in py_motif for j in py_members if j != i]) for i in connected_to])
+                        extra[idm] += [tuple(npreys), tuple(npreds)]
+                    extra[idm] = tuple(extra[idm])
+                
+                lkey = int("".join([str(_i[1]) for _i in sorted(extra.values())]))
+
+                newid=(id, lkey)
+
+                if newid not in possible_motifs:
+                    print >> sys.stderr, newid
+                    print >> sys.stderr, "Apparently there is an unexpected motif. Talk to the developer!"
+                    sys.exit()
+            else:
+                newid=id
+
             if participation.weighted:
 
                 weight = fweight([participation.links[x].weight for x in permutations(py_members, 2) if x in participation.links])
 
                 for m in py_members:
                     try:
-                        participation.nodes[m].motifs[id] += 1
+                        participation.nodes[m].motifs[newid] += 1
                     except KeyError:
-                        participation.nodes[m].motifs[id] = 1
+                        participation.nodes[m].motifs[newid] = 1
                     try:
-                        participation.nodes[m].weighted_motifs[id] += weight
+                        participation.nodes[m].weighted_motifs[newid] += weight
                     except KeyError:
-                        participation.nodes[m].weighted_motifs[id] = weight
+                        participation.nodes[m].weighted_motifs[newid] = weight
             else:
                 for m in py_members:
                     try:
-                        participation.nodes[m].motifs[id] += 1
+                        participation.nodes[m].motifs[newid] += 1
                     except KeyError:
-                        participation.nodes[m].motifs[id] = 1
+                        participation.nodes[m].motifs[newid] = 1
 
             if links:
                 for m in permutations(py_members, 2):
                     if m in participation.links:
                         try:
-                            participation.links[m].motifs[id] += 1
+                            participation.links[m].motifs[newid] += 1
                         except KeyError:
-                            participation.links[m].motifs[id] = 1
+                            participation.links[m].motifs[newid] = 1
 
                         if participation.weighted:
                             try:
-                                participation.links[m].weighted_motifs[id] += weight
+                                participation.links[m].weighted_motifs[newid] += weight
                             except KeyError:
-                                participation.links[m].weighted_motifs[id] = weight
+                                participation.links[m].weighted_motifs[newid] = weight
 
             am_l = am_l.next
 
@@ -755,7 +839,8 @@ def participation_stats(mfinderi, participation, links, allmotifs, fweight):
 
     cmfinder.res_tbl_mem_free_single(results)
 
-    possible_motifs = set(participation.motifs.keys())
+    if nlayers==1:
+        possible_motifs = set(participation.motifs.keys())
 
 
     for r in possible_motifs:
@@ -987,14 +1072,13 @@ def role_stats(mfinderi,roles,links,networktype,allroles,fweight, nlayers,layers
                         extra[idm] += [tuple(npreys), tuple(npreds)]
                     extra[idm] = tuple(extra[idm])
                 
-                lkey = int("".join([str(_i[0]) for _i in sorted(extra.values())]))
+                lkey = int("".join([str(_i[1]) for _i in sorted(extra.values())]))
 
                 for idm, m in enumerate(py_members):
-                    if key[m] not in possible_roles:
-                        _key = tuple(list(key[m])+[lkey])
-                    else:
-                        _key = tuple(list(extra[m])+[lkey])
-
+                    _key = tuple(list(key[idm])+[lkey])
+                    if _key not in possible_roles:
+                        _key = tuple(list(extra[idm])+[lkey])
+ 
                     if _key not in possible_roles:
                         print >> sys.stderr, _key
                         print >> sys.stderr, "Apparently there is a role you aren't accounting for in 'roles.py'. "
