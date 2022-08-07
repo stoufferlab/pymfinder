@@ -6,6 +6,7 @@ from math import sqrt
 from roles import *
 from datatypes import *
 import numpy as np
+import copy
 
 ##############################################################
 ##############################################################
@@ -194,6 +195,7 @@ def build_motif_from_id(m, motifsize):
     motif = np.asarray(motif).reshape(motifsize,motifsize)
     return motif
 
+### Geenerate the key when nodes can be in different layers---KEYS for MULTILAYER NETWORKS
 def generate_key(motif, nlayers, layers_method="complete"):
     lperm = list(product(range(1,nlayers+1), repeat=len(motif)))
     nprey = np.sum(motif, 1)
@@ -218,7 +220,6 @@ def generate_key(motif, nlayers, layers_method="complete"):
                 roles_ref[extra] = dict()
             roles_ref[extra][i] = 1
             ###
-
     else:
         for j in lperm:
             _key=dict()
@@ -276,6 +277,72 @@ def generate_key(motif, nlayers, layers_method="complete"):
                     _roles += [j]
 
     return _roles, roles_ref
+    
+### Geenerate the key links are of different types---KEYS for MULTIPLEX NETWORKS (it only works for three species motifs...)
+def generate_key_links(motif, nlayers):
+    motif = np.asarray(motif)
+    lperm = list(product(range(1,nlayers+1), repeat=np.sum(motif)))
+    motif_ = copy.deepcopy(motif)
+    roles = dict()
+    roles_ref = dict()
+    for i in lperm:
+        idxs = np.where(motif==1)
+        for j in range(0,len(idxs[0])):
+            motif_[idxs[0][j], idxs[1][j]] = i[j]
+        
+        _key=dict()
+        _extra=dict()
+        for k in range(0, len(motif)):
+            key = []
+            extra = []
+            for l in range(0, nlayers):
+                nprey = np.sum(motif_==(l+1), 1)
+                npred = np.sum(motif_==(l+1), 0)
+                key += [npred[k], nprey[k]]
+                #Is the order of this correct?
+                extra += [tuple(np.sort(nprey[motif_[:,k]==(l+1)])), tuple(np.sort(npred[motif_[:,k]==(l+1)]))]
+                
+            _key[k] = key
+            _extra[k] = extra
+
+        lkey = int("".join([str(j) for j in sorted(list(i))]))
+        
+        for j in range(0, len(motif)):
+            key=tuple(_key[j]+[lkey])
+            extra=tuple(_extra[j]+[lkey])
+
+            try:
+                x=roles[key]
+            except KeyError:
+                roles[key] = []
+            roles[key] += [extra]
+
+            ###Useful reference dictionary to locate roles and visualize motifs
+            try:
+                x=roles_ref[extra]
+            except KeyError:
+                roles_ref[extra] = dict()
+            roles_ref[extra][j] = i
+            ###
+            
+    _roles=[]
+    for i in roles.keys():
+        if len(set(roles[i]))==1:
+            _roles += [i]
+            ###Useful reference dictionary to locate roles and visualize motifs
+            roles_ref[i] = roles_ref[list(set(roles[i]))[0]]
+            ###
+
+        else:
+            for j in set(roles[i]):
+                if j in roles:
+                    sys.stderr.write("Check with the developer because something is wrong!\n")
+                    sys.exit()
+                else:
+                    _roles += [j]
+
+    return _roles, roles_ref
+
 
 ##############################################################
 ##############################################################
